@@ -152,6 +152,7 @@ export FLASK_LOG_LEVEL=DEBUG
 - **系统监控**：psutil, netifaces
 - **打包工具**：PyInstaller
 
+***有时候进入网页无法加载图标是正常的，因为它们需要时间进行缓存***
 ---
 
 ## 许可协议
