@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/main.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件共享平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #2ec4b6;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+        
+        .file-card {
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            height: 100%;
+        }
+        
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+        }
+        
+        .file-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .progress-container {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary);
+            transition: width 0.4s ease;
+        }
+        
+        .storage-card {
+            background: linear-gradient(135deg, #4361ee, #3a0ca3);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(90deg, var(--primary), var(--secondary));">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i>
+                文件共享平台
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="refreshFiles">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/login">管理员</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/open_source">开源项目                            
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <!-- 存储空间卡片 -->
+        <div class="storage-card mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-1"><i class="bi bi-hdd me-2"></i>存储空间</h5>
+                    <small class="opacity-75">已使用 <span id="disk-used">0</span> / <span id="max-storage">0</span></small>
+                </div>
+                <div class="text-end">
+                    <h2 class="mb-0" id="usage-percent">0%</h2>
+                    <small class="opacity-75">使用率</small>
+                </div>
+            </div>
+            <div class="progress-container mt-3">
+                <div class="progress-bar" id="storage-progress"></div>
+            </div>
+        </div>
+
+        <!-- 上传区域 -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-cloud-upload me-2"></i>上传文件</h5>
+                    <span class="badge bg-primary" id="max-file-size">最大可以上传{{ max_file_size }}MB</span>
+                </div>
+                
+                <div class="border rounded p-5 text-center mb-3" id="drop-area">
+                    <div id="upload-content">
+                        <i class="bi bi-cloud-arrow-up display-4 text-muted mb-3"></i>
+                        <h6>拖放文件到此处上传</h6>
+                        <p class="text-muted small">或点击选择文件</p>
+                        <input type="file" id="file-input" class="d-none">
+                        <button class="btn btn-primary px-4" id="browse-btn">浏览文件</button>
+                    </div>
+                    <div id="upload-progress" class="d-none">
+                        <h5 class="mb-3" id="upload-filename">上传中...</h5>
+                        <div class="progress-container mx-auto" style="max-width: 400px;">
+                            <div class="progress-bar" id="upload-progress-bar" style="width: 0%"></div>
+                        </div>
+                        <div class="mt-2" id="upload-stats">0% • 0 KB/s • 0s 剩余</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件列表 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="bi bi-files me-2"></i>文件列表</h5>
+            <div class="d-flex align-items-center">
+                <div class="input-group" style="max-width: 300px;">
+                    <input type="text" class="form-control" placeholder="搜索文件..." id="search-input">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="file-list" class="row g-4">
+            <!-- 动态加载文件卡片 -->
+            <div class="col-12 text-center py-5" id="loading-files">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p class="mt-2">正在加载文件列表...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取系统配置
+        fetch('/api/system/config')
+            .then(res => res.json())
+            .then(config => {
+                document.title = config.web_ui.title || '文件共享平台';
+                document.querySelector('.navbar-brand').innerText = config.web_ui.brand;
+                document.getElementById('max-file-size').innerText = `最大${formatBytes(config.max_file_size)}`;
+            });
+
+        // 初始化文件上传功能
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const uploadContent = document.getElementById('upload-content');
+        const uploadProgress = document.getElementById('upload-progress');
+        const uploadProgressBar = document.getElementById('upload-progress-bar');
+        const uploadStats = document.getElementById('upload-stats');
+        
+        // 浏览文件按钮点击
+        browseBtn.addEventListener('click', () => fileInput.click());
+        
+        // 文件输入变化
+        fileInput.addEventListener('change', handleFiles);
+        
+        // 拖拽事件处理
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('bg-light');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('bg-light');
+        }
+        
+        // 文件放置处理
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles({ target: { files } });
+        }
+        
+        // 处理上传文件
+        function handleFiles(e) {
+            const files = e.target.files;
+            if (files.length === 0) return;
+            
+            const file = files[0];
+            uploadFile(file);
+        }
+        
+        // 上传文件函数
+        function uploadFile(file) {
+            // 显示上传状态
+            uploadContent.classList.add('d-none');
+            uploadProgress.classList.remove('d-none');
+            document.getElementById('upload-filename').innerText = file.name;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            const startTime = Date.now();
+            let lastLoaded = 0;
+            let lastTime = startTime;
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/upload');
+            
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    uploadProgressBar.style.width = `${percent}%`;
+                    
+                    // 计算传输速度
+                    const now = Date.now();
+                    const timeDiff = (now - lastTime) / 1000; // 秒
+                    
+                    if (timeDiff > 0.5) {
+                        const loadedDiff = e.loaded - lastLoaded;
+                        const speed = Math.round(loadedDiff / timeDiff / 1024); // KB/s
+                        
+                        // 计算剩余时间
+                        const remainingBytes = e.total - e.loaded;
+                        const remainingTime = Math.round(remainingBytes / (speed * 1024));
+                        
+                        uploadStats.innerText = `${percent}% • ${speed} KB/s • ${remainingTime}s 剩余`;
+                        
+                        lastLoaded = e.loaded;
+                        lastTime = now;
+                    }
+                }
+            });
+            
+            xhr.addEventListener('load', () => {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    uploadStats.innerHTML = `<span class="text-success"><i class="bi bi-check-circle-fill"></i> 上传完成</span>`;
+                    setTimeout(() => {
+                        uploadProgress.classList.add('d-none');
+                        uploadContent.classList.remove('d-none');
+                        uploadProgressBar.style.width = '0%';
+                        loadFiles();
+                    }, 1500);
+                } else {
+                    try {
+                        const err = JSON.parse(xhr.response);
+                        uploadStats.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> ${err.error || '上传失败'}</span>`;
+                    } catch (e) {
+                        uploadStats.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> 上传失败</span>`;
+                    }
+                }
+            });
+            
+            xhr.addEventListener('error', () => {
+                uploadStats.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> 网络错误</span>`;
+            });
+            
+            xhr.send(formData);
+        }
+        
+// 加载文件列表
+function loadFiles() {
+    document.getElementById('file-list').innerHTML = `
+        <div class="col-12 text-center py-5" id="loading-files">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2">正在加载文件列表...</p>
+        </div>
+    `;
+    
+    fetch('/api/files')
+        .then(res => res.json())
+        .then(data => {
+            // 更新存储空间信息
+            document.getElementById('disk-used').textContent = formatBytes(data.disk_used);
+            document.getElementById('max-storage').textContent = formatBytes(data.max_storage);
+            const usagePercent = Math.round((data.disk_used / data.max_storage) * 100);
+            document.getElementById('usage-percent').textContent = `${usagePercent}%`;
+            document.getElementById('storage-progress').style.width = `${usagePercent}%`;
+            
+            // 渲染文件列表
+            if (data.files.length === 0) {
+                document.getElementById('file-list').innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-folder-x display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无文件</h5>
+                        <p>上传第一个文件开始使用</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            data.files.forEach(file => {
+                // 修复日期显示问题
+                let displayDate = "";
+                if (file.upload_time && !isNaN(file.upload_time)) {
+                    const fileDate = new Date(file.upload_time * 1000);
+                    displayDate = fileDate.toLocaleDateString();
+                }
+                
+                // 修复文件大小显示问题
+                let displaySize = "未知大小";
+                if (file.size && !isNaN(file.size)) {
+                    displaySize = formatBytes(file.size);
+                }
+                
+                // 修复文件名显示问题
+                const fileName = file.filename || file.name || "未命名文件";
+                
+                // 修复下载链接问题
+                const downloadLink = `/download/${encodeURIComponent(fileName)}`;
+                
+                html += `
+                    <div class="col-md-6 col-lg-4 col-xl-3">
+                        <div class="card file-card">
+                            <div class="card-body">
+                                <div class="file-icon text-primary">
+                                    <i class="bi ${getFileIcon(getFileType(fileName))}"></i>
+                                </div>
+                                <h6 class="card-title text-truncate" title="${fileName}">${fileName}</h6>
+                                <div class="d-flex justify-content-between small text-muted mb-2">
+                                    <span>${displaySize}</span>
+                                    <span>${displayDate}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <a href="${downloadLink}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download me-1"></i>下载
+                                    </a>
+                                    <span class="text-muted small">
+                                        <i class="bi bi-arrow-down-circle"></i> ${file.download_count || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('file-list').innerHTML = html;
+        })
+        .catch(error => {
+            console.error('加载文件列表失败:', error);
+            document.getElementById('file-list').innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-exclamation-triangle display-4 text-danger mb-3"></i>
+                    <h5 class="text-danger">加载失败</h5>
+                    <p>无法获取文件列表，请刷新重试</p>
+                </div>
+            `;
+        });
+}
+
+// 辅助函数：获取文件类型
+function getFileType(filename) {
+    if (!filename) return 'unknown';
+    
+    const extension = filename.split('.').pop().toLowerCase();
+    const types = {
+        // 图片类型
+        jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', bmp: 'image', 
+        webp: 'image', svg: 'image', tiff: 'image',
+        
+        // 文档类型
+        pdf: 'document', doc: 'document', docx: 'document', xls: 'document', 
+        xlsx: 'document', ppt: 'document', pptx: 'document', txt: 'document',
+        rtf: 'document', odt: 'document', ods: 'document', odp: 'document',
+        
+        // 压缩文件
+        zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', 
+        gz: 'archive', bz2: 'archive',
+        
+        // 音频文件
+        mp3: 'audio', wav: 'audio', ogg: 'audio', flac: 'audio', aac: 'audio',
+        
+        // 视频文件
+        mp4: 'video', mov: 'video', avi: 'video', mkv: 'video', wmv: 'video',
+        flv: 'video', webm: 'video',
+        
+        // 代码文件
+        js: 'code', html: 'code', css: 'code', py: 'code', java: 'code', 
+        cpp: 'code', c: 'code', cs: 'code', php: 'code', json: 'code', 
+        xml: 'code', sql: 'code',
+        
+        // 其他
+        exe: 'filetype', dll: 'executable', apk: 'android', 
+        iso: 'disk_image', dmg: 'disk_image'
+    };
+    
+    return types[extension] || 'unknown';
+}
+
+// 辅助函数：获取文件图标
+function getFileIcon(fileType) {
+    const icons = {
+        image: 'bi-file-image',
+        document: 'bi-file-earmark-text',
+        archive: 'bi-file-earmark-zip',
+        audio: 'bi-file-earmark-music',
+        video: 'bi-file-earmark-play',
+        code: 'bi-file-earmark-code',
+        filetype: 'bi bi-filetype-exe',
+        android: 'bi bi-android2',
+        executable: 'bi-file-earmark-binary',
+        disk_image: 'bi-file-earmark-break',
+        unknown: 'bi-file-earmark'
+    };
+    
+    return icons[fileType] || 'bi-file-earmark';
+}
+
+// 辅助函数：格式化字节大小
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0 || isNaN(bytes)) return '0 Bytes';
+    
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+        
+        // 初始化刷新按钮
+        document.getElementById('refreshFiles').addEventListener('click', (e) => {
+            e.preventDefault();
+            loadFiles();
+        });
+        
+        // 搜索功能
+        const searchInput = document.getElementById('search-input');
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            // 如果没有搜索词，显示所有文件
+            if (!searchTerm) {
+                document.querySelectorAll('.file-card').forEach(card => {
+                    card.closest('.col').style.display = '';
+                });
+                return;
+            }
+            
+            // 搜索匹配的文件
+            document.querySelectorAll('.file-card').forEach(card => {
+                const title = card.querySelector('.card-title').textContent.toLowerCase();
+                if (title.includes(searchTerm)) {
+                    card.closest('.col').style.display = '';
+                } else {
+                    card.closest('.col').style.display = 'none';
+                }
+            });
+        });
+               
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            loadFiles();
+            
+            // 配置拖放区域
+            highlight = () => dropArea.style.border = '2px dashed #4361ee';
+            unhighlight = () => dropArea.style.border = '';
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
