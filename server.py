@@ -8,14 +8,37 @@ import psutil
 import socket
 import netifaces
 import threading
+import requests
+import queue
+import hashlib
+import tempfile
+import concurrent
+import concurrent.futures
+import math
+import uuid
+import urllib.parse
+import urllib.request
+import subprocess
+import platform
+import zipfile
+from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import re
 from flask import Flask, render_template, send_from_directory, request, jsonify, abort, session, redirect, url_for, flash
-
-upload_lock = threading.Lock()
+from urllib.parse import urlparse
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # 添加密钥用于session管理
+
+upload_lock = threading.Lock()
+
+# GitHub镜像克隆队列
+github_clone_queue = queue.Queue()
+github_clone_tasks = {}
+github_clone_lock = threading.Lock()
+active_cloners = {} # 当前活跃的克隆任务
 
 # 系统配置默认值
 DEFAULT_CONFIG = {
@@ -23,7 +46,7 @@ DEFAULT_CONFIG = {
     'max_file_size': 100,  # MB
     'max_total_size': 1024,  # MB
     'app_name': '文件共享平台',
-    'app_version': '1.2.0',
+    'app_version': '1.3',
     'admin_user': 'admin',
     'admin_password': 'admin@123',
     'port': 5000,  # 添加端口配置
@@ -58,12 +81,6 @@ def init_system():
                         system_config[key] = saved_config[key]
         except Exception as e:
             print(f"配置加载错误: {e}")
-    
-    # 确保静态目录存在
-    static_dirs = ['static/css', 'static/js']
-    for static_dir in static_dirs:
-        if not os.path.exists(static_dir):
-            os.makedirs(static_dir)
     
     # 确保元数据文件有效
     if not os.path.exists(METADATA_FILE):
@@ -277,6 +294,230 @@ def get_system_resources():
             ]
         }
 
+# 检查Git是否安装
+def is_git_installed():
+    try:
+        result = subprocess.run(['git', '--version'], capture_output=True, text=True, timeout=5)
+        return result.returncode == 0
+    except:
+        return False
+
+# 安装Git（仅Windows）
+def install_git():
+    if platform.system() != 'Windows':
+        return False
+    
+    try:
+        result = subprocess.run(['winget', 'install', '--id', 'Git.Git', '-e', '--source', 'winget'], 
+                                capture_output=True, text=True, timeout=300)
+        return result.returncode == 0
+    except:
+        return False
+
+# GitHub仓库克隆器
+class GitHubCloner:
+    def __init__(self, repo_url, task_id, branch="main"):
+        self.repo_url = repo_url
+        self.task_id = task_id
+        self.branch = branch
+        self.temp_dir = tempfile.mkdtemp()
+        self.zip_path = None
+        self.file_name = None
+        self.status = "pending"
+        self.progress = 0
+        self.speed = 0
+        self.start_time = time.time()
+        self.error = None
+        self.clone_dir = None
+        self.process = None
+        self.cancelled = False
+    
+    def get_repo_name(self):
+        """从仓库URL提取仓库名称"""
+        if self.repo_url.endswith('.git'):
+            repo_url = self.repo_url[:-4]
+        else:
+            repo_url = self.repo_url
+        
+        if repo_url.endswith('/'):
+            repo_url = repo_url[:-1]
+        
+        return repo_url.split('/')[-1]
+    
+    def clone(self):
+        """执行仓库克隆任务"""
+        try:
+            self.status = "cloning"
+            
+            # 获取仓库名称
+            repo_name = self.get_repo_name()
+            self.clone_dir = os.path.join(self.temp_dir, repo_name)
+            
+            # 创建文件夹名称
+            folder_name = f"{repo_name}-{self.branch}"
+            counter = 1
+            while os.path.exists(os.path.join(self.temp_dir, folder_name)):
+                folder_name = f"{repo_name}-{self.branch}_{counter}"
+                counter += 1
+            
+            self.clone_dir = os.path.join(self.temp_dir, folder_name)
+            
+            # 执行git clone命令
+            cmd = ['git', 'clone', '--branch', self.branch, self.repo_url, self.clone_dir]
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # 监控克隆进度
+            while True:
+                if self.cancelled:
+                    raise RuntimeError("任务已被取消")
+                
+                # 检查进程是否完成
+                if self.process.poll() is not None:
+                    break
+                
+                # 简单模拟进度更新
+                self.progress = min(99, self.progress + 1)
+                time.sleep(0.5)
+            
+            # 检查命令执行结果
+            if self.process.returncode != 0:
+                error_output = self.process.stderr.read()
+                raise RuntimeError(f"Git克隆失败: {error_output}")
+            
+            # 打包仓库（排除.git目录）
+            self.package_repo(folder_name)
+            
+            # 移动到上传目录
+            self.move_to_uploads()
+            
+            # 更新状态
+            self.status = "completed"
+        
+        except Exception as e:
+            self.status = "failed"
+            self.error = str(e)
+        
+        finally:
+            # 清理临时目录
+            if os.path.exists(self.temp_dir):
+                shutil.rmtree(self.temp_dir, ignore_errors=True)
+    
+    def package_repo(self, folder_name):
+        """将仓库打包为ZIP文件"""
+        try:
+            # 创建ZIP文件
+            self.file_name = f"{folder_name}.zip"
+            self.zip_path = os.path.join(self.temp_dir, self.file_name)
+            
+            # 创建ZIP文件
+            with zipfile.ZipFile(self.zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(self.clone_dir):
+                    # 排除.git目录
+                    if '.git' in dirs:
+                        dirs.remove('.git')
+                    
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, self.clone_dir)
+                        zipf.write(file_path, arcname)
+        except Exception as e:
+            raise RuntimeError(f"打包失败: {str(e)}")
+    
+    def move_to_uploads(self):
+        """将ZIP文件移动到上传目录"""
+        upload_dir = system_config['upload_folder']
+        final_path = os.path.join(upload_dir, self.file_name)
+        
+        # 处理重名文件
+        counter = 1
+        name, ext = os.path.splitext(self.file_name)
+        while os.path.exists(final_path):
+            new_name = f"{name}_{counter}{ext}"
+            final_path = os.path.join(upload_dir, new_name)
+            counter += 1
+        
+        shutil.move(self.zip_path, final_path)
+        self.final_path = final_path
+        
+        # 更新元数据
+        update_metadata(os.path.basename(final_path), 'upload')
+        
+        # 添加来源信息
+        metadata = load_metadata()
+        if self.file_name in metadata:
+            metadata[self.file_name]['source'] = {
+                "type": "github",
+                "repo_url": self.repo_url,
+                "branch": self.branch,
+                "cloned_at": time.strftime("%Y-%m-%d %H:%M:%S")
+            }
+            
+            try:
+                with open(METADATA_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(metadata, f, indent=4, ensure_ascii=False)
+            except Exception as e:
+                print(f"元数据保存失败: {e}")
+    
+    def cancel(self):
+        """取消克隆任务"""
+        self.cancelled = True
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+
+# GitHub仓库克隆线程
+class GitHubCloneThread(threading.Thread):
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.running = True
+        
+    def run(self):
+        while self.running:
+            try:
+                cloner = github_clone_queue.get(timeout=1)
+                
+                # 添加到活动克隆器
+                with github_clone_lock:
+                    active_cloners[cloner.task_id] = cloner
+                
+                cloner.clone()
+                
+                # 更新任务状态
+                with github_clone_lock:
+                    github_clone_tasks[cloner.task_id] = {
+                        "status": cloner.status,
+                        "progress": cloner.progress,
+                        "repo_url": cloner.repo_url,
+                        "file_name": cloner.file_name,
+                        "error": cloner.error,
+                        "start_time": cloner.start_time,
+                        "branch": cloner.branch
+                    }
+                    
+                    # 从活动克隆器中移除
+                    if cloner.task_id in active_cloners:
+                        del active_cloners[cloner.task_id]
+                
+                github_clone_queue.task_done()
+            
+            except queue.Empty:
+                pass
+    
+    def stop(self):
+        self.running = False
+
+# 启动GitHub克隆线程
+github_clone_thread = GitHubCloneThread()
+github_clone_thread.start()
+
 # 路由处理
 
 # 登录路由
@@ -324,7 +565,8 @@ def admin():
                            interfaces=sys_resources['interfaces'],
                            # 网络配置
                            port=system_config['port'],
-                           network_interface=system_config['network_interface'])
+                           network_interface=system_config['network_interface'],
+                           offline_download_enabled=True)
 
 # 定义/admin/login路由（合并GET和POST）
 @app.route('/admin/login', methods=['GET', 'POST'], endpoint='admin_login')
@@ -390,6 +632,25 @@ def admin_login():
 def admin_logout():
     session.pop('admin_token', None)
     return redirect('/admin/login')
+
+@app.route('/admin/github_clone')
+def admin_operations():
+    # 检查管理员登录状态
+    if 'admin_token' not in session:
+        return redirect('/admin/login')
+    
+    # 获取磁盘使用情况
+    disk = get_disk_usage()
+    
+    # 获取文件列表
+    files = get_file_list()
+    
+    return render_template('github_clone.html',
+                           files=files,
+                           disk=disk,
+                           max_file_size=system_config['max_file_size'],
+                           max_total_size=system_config['max_total_size'],
+                           upload_folder=system_config['upload_folder'])
 
 # API接口
 @app.route('/api/files')
@@ -473,6 +734,7 @@ def api_update_config():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 @app.route('/api/upload', methods=['POST'])
+
 def upload():
     if 'file' not in request.files:
         return jsonify({"status": "error", "message": "未选择文件"})
@@ -644,6 +906,129 @@ def api_delete_file():
             return jsonify({"status": "error", "message": f"删除失败: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"status": "error", "message": f"请求处理失败: {str(e)}"}), 500
+
+# GitHub镜像克隆
+@app.route('/api/github_clone', methods=['POST'])
+def add_github_clone():
+    if 'admin_token' not in session:
+        return jsonify({"status": "error", "message": "未授权访问"}), 403
+    
+    # 检查Git是否安装
+    if not is_git_installed():
+        # 尝试安装Git（仅Windows）
+        if platform.system() == 'Windows':
+            if not install_git():
+                return jsonify({
+                    "status": "error",
+                    "message": "Git未安装且自动安装失败",
+                    "install_link": "https://git-scm.com/downloads"
+                }), 400
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Git未安装",
+                "install_link": "https://git-scm.com/downloads"
+            }), 400
+    
+    data = request.get_json()
+    repo_url = data.get('repo_url')
+    branch = data.get('branch', 'main')
+    
+    if not repo_url:
+        return jsonify({"status": "error", "message": "未提供仓库URL"}), 400
+    
+    # 创建克隆任务
+    task_id = hashlib.md5(f"{repo_url}{time.time()}".encode()).hexdigest()[:8]
+    cloner = GitHubCloner(repo_url, task_id, branch)
+    
+    # 添加到队列
+    github_clone_queue.put(cloner)
+    
+    # 初始化任务状态
+    with github_clone_lock:
+        github_clone_tasks[task_id] = {
+            "status": "pending",
+            "progress": 0,
+            "repo_url": repo_url,
+            "file_name": None,
+            "error": None,
+            "start_time": time.time(),
+            "branch": branch
+        }
+    
+    return jsonify({"status": "success", "task_id": task_id})
+
+@app.route('/api/github_clone/tasks', methods=['GET'])
+def get_github_clone_tasks():
+    if 'admin_token' not in session:
+        return jsonify({"status": "error", "message": "未授权访问"}), 403
+    
+    with github_clone_lock:
+        return jsonify({
+            "tasks": github_clone_tasks,
+            "active_count": github_clone_queue.qsize(),
+            "thread_active": github_clone_thread.is_alive()
+        })
+
+@app.route('/api/github_clone/cancel_task', methods=['POST'])
+def cancel_github_clone_task():
+    if 'admin_token' not in session:
+        return jsonify({"status": "error", "message": "未授权访问"}), 403
+    
+    data = request.get_json()
+    task_id = data.get('task_id')
+    
+    if not task_id:
+        return jsonify({"status": "error", "message": "未提供任务ID"}), 400
+    
+    with github_clone_lock:
+        # 检查任务是否在活动克隆器中
+        if task_id in active_cloners:
+            try:
+                active_cloners[task_id].cancel()
+                # 更新任务状态
+                if task_id in github_clone_tasks:
+                    github_clone_tasks[task_id]['status'] = 'cancelled'
+                return jsonify({"status": "success", "message": "任务已取消"})
+            except Exception as e:
+                return jsonify({"status": "error", "message": f"取消任务失败: {str(e)}"}), 500
+        elif task_id in github_clone_tasks:
+            # 如果任务不在活动状态，但存在于任务列表中
+            github_clone_tasks[task_id]['status'] = 'cancelled'
+            return jsonify({"status": "success", "message": "任务已标记为取消"})
+        else:
+            return jsonify({"status": "error", "message": "任务不存在"}), 404
+
+@app.route('/api/github_clone/clear_tasks', methods=['POST'])
+def clear_github_clone_tasks():
+    if 'admin_token' not in session:
+        return jsonify({"status": "error", "message": "未授权访问"}), 403
+    
+    data = request.get_json()
+    clear_type = data.get('type', 'completed')  # 默认清除已完成任务
+    
+    with github_clone_lock:
+        # 根据类型清除任务
+        tasks_to_remove = []
+        for task_id, task in list(github_clone_tasks.items()):
+            if clear_type == 'all':
+                tasks_to_remove.append(task_id)
+            elif clear_type == 'completed' and task['status'] == 'completed':
+                tasks_to_remove.append(task_id)
+            elif clear_type == 'failed' and task['status'] == 'failed':
+                tasks_to_remove.append(task_id)
+            elif clear_type == 'cancelled' and task['status'] == 'cancelled':
+                tasks_to_remove.append(task_id)
+        
+        # 移除选中的任务
+        for task_id in tasks_to_remove:
+            del github_clone_tasks[task_id]
+        
+        return jsonify({
+            "status": "success",
+            "removed_count": len(tasks_to_remove),
+            "remaining_count": len(github_clone_tasks)
+        })
 
 # 启动服务
 if __name__ == '__main__':

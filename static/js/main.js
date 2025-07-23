@@ -586,3 +586,219 @@ function updateSystemStatus() {
         })
         .catch(error => console.error('Error fetching system status:', error));
 }
+function loadGitHubCloneTasks() {
+    const tasksContainer = document.getElementById('github-tasks-container');
+    if (!tasksContainer) return;
+    
+    // 显示加载状态
+    tasksContainer.innerHTML = `
+        <div class="text-center py-5" id="loading-tasks">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <span class="ms-2">正在加载GitHub克隆任务列表...</span>
+        </div>
+    `;
+    
+    fetch('/api/github_clone/tasks')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP错误! 状态: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.tasks && Object.keys(data.tasks).length > 0) {
+                renderGitHubCloneTasks(data.tasks);
+            } else {
+                tasksContainer.innerHTML = `
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-4 text-muted mb-3"></i>
+                        <h5 class="text-muted">暂无GitHub克隆任务</h5>
+                        <p>添加GitHub仓库开始克隆</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('加载GitHub克隆任务失败:', error);
+            tasksContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> 加载任务列表失败: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// 渲染GitHub克隆任务列表
+function renderGitHubCloneTasks(tasks) {
+    const tasksContainer = document.getElementById('github-tasks-container');
+    if (!tasksContainer) return;
+    
+    let html = '';
+    
+    for (const [taskId, task] of Object.entries(tasks)) {
+        const status = task.status || 'pending';
+        const repoName = task.repo_url ? task.repo_url.split('/').pop() : '未知仓库';
+        const fileName = task.file_name || '正在获取...';
+        const progress = task.progress || 0;
+        const speed = task.speed ? formatBytes(task.speed) + '/s' : '计算中';
+        const elapsed = task.start_time ? formatElapsed(time.time() - task.start_time) : '';
+        
+        html += `
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="card-title">${repoName}</h6>
+                            <p class="text-muted small mb-0">${task.repo_url}</p>
+                        </div>
+                        <span class="badge bg-${status === 'completed' ? 'success' : status === 'failed' ? 'danger' : status === 'cloning' ? 'primary' : 'secondary'}">
+                            ${status === 'cloning' ? '克隆中' : status === 'completed' ? '已完成' : status === 'failed' ? '失败' : '等待中'}
+                        </span>
+                    </div>
+                    
+                    ${status === 'cloning' ? `
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span>文件: ${fileName}</span>
+                            <span class="speed-badge"><i class="bi bi-speedometer2"></i> ${speed}</span>
+                        </div>
+                        <div class="progress mb-2">
+                            <div class="progress-bar" role="progressbar" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span>用时: ${elapsed}</span>
+                            <span>进度: ${progress.toFixed(1)}%</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${status === 'completed' ? `
+                        <div class="alert alert-success mb-0">
+                            <i class="bi bi-check-circle"></i> 克隆完成！文件已保存到上传目录
+                        </div>
+                    ` : ''}
+                    
+                    ${status === 'failed' ? `
+                        <div class="alert alert-danger mb-0">
+                            <i class="bi bi-exclamation-circle"></i> 克隆失败: ${task.error || '未知错误'}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="task-actions mt-3">
+                        ${status === 'cloning' ? `
+                            <button class="btn btn-sm btn-outline-danger cancel-btn" data-task-id="${taskId}">
+                                <i class="bi bi-x-circle"></i> 取消
+                            </button>
+                        ` : ''}
+                        
+                        <button class="btn btn-sm btn-outline-secondary remove-btn" data-task-id="${taskId}">
+                            <i class="bi bi-trash"></i> 移除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    tasksContainer.innerHTML = html;
+    
+    // 添加取消按钮事件
+    document.querySelectorAll('.cancel-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const taskId = this.getAttribute('data-task-id');
+            cancelGitHubCloneTask(taskId);
+        });
+    });
+    
+    // 添加移除按钮事件
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const taskId = this.getAttribute('data-task-id');
+            removeGitHubCloneTask(taskId);
+        });
+    });
+}
+
+// 取消GitHub克隆任务
+function cancelGitHubCloneTask(taskId) {
+    if (!confirm('确定要取消这个克隆任务吗？')) return;
+    
+    fetch('/api/github_clone/cancel_task', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': localStorage.getItem('admin_token')
+        },
+        body: JSON.stringify({ task_id: taskId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('任务已取消');
+            loadGitHubCloneTasks();
+        } else {
+            alert(`取消任务失败: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('取消任务失败:', error);
+        alert('取消任务失败，请检查控制台');
+    });
+}
+
+// 移除GitHub克隆任务
+function removeGitHubCloneTask(taskId) {
+    if (!confirm('确定要从列表中移除这个任务吗？')) return;
+    
+    fetch('/api/github_clone/clear_tasks', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Token': localStorage.getItem('admin_token')
+        },
+        body: JSON.stringify({ 
+            type: 'single',
+            task_id: taskId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert('任务已移除');
+            loadGitHubCloneTasks();
+        } else {
+            alert(`移除任务失败: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        console.error('移除任务失败:', error);
+        alert('移除任务失败');
+    });
+}
+
+// 格式化时间间隔
+function formatElapsed(seconds) {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    let result = '';
+    if (hours > 0) result += `${hours}h `;
+    if (minutes > 0 || hours > 0) result += `${minutes}m `;
+    result += `${secs}s`;
+    
+    return result;
+}
+
+// 在页面加载时初始化GitHub克隆任务
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查当前页面是否是GitHub克隆页面
+    if (window.location.pathname === '/admin/github_clone') {
+        // 初始加载任务
+        loadGitHubCloneTasks();
+        
+        // 每5秒刷新一次任务状态
+        setInterval(loadGitHubCloneTasks, 5000);
+    }
+    
+});
