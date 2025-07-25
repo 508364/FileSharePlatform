@@ -6,3 +6,5 @@ Flask-Session==0.5.0
 python-dotenv==1.0.0
 Werkzeug==2.3.7
 Jinja2==3.1.2
+chardet==5.2.0
+requests

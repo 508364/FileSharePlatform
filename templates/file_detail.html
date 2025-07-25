@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件详情 - 文件共享平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --light: #f8f9fc;
+            --dark: #212529;
+            --gray: #6c757d;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            color: #333;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        .file-detail-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .file-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-title {
+            font-size: 24px;
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .file-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .file-content {
+            padding: 25px;
+        }
+        
+        .preview-container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .video-player {
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 5px;
+            background: black;
+        }
+        
+        .pdf-viewer {
+            width: 100%;
+            height: 80vh;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        
+        .text-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            max-height: 70vh;
+            overflow: auto;
+            width: 100%;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-download {
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-download:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+        
+        .file-meta {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .meta-label {
+            font-size: 13px;
+            color: var(--gray);
+        }
+        
+        .meta-value {
+            font-weight: 500;
+            margin-top: 5px;
+        }
+        
+        .unsupported-container {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .unsupported-icon {
+            font-size: 64px;
+            color: #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .pdf-viewer {
+    width: 100%;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 15px;
+    background: #f8f9fa;
+}
+
+.pdf-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.page-info {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pdf-pages-container {
+    max-width: 100%;
+    overflow-x: auto;
+    text-align: center;
+}
+
+.pdf-pages-container canvas {
+    max-width: 100%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin: 0 auto;
+}
+
+        /* 深色模式变量 */
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --light: #f8f9fc;
+            --dark: #212529;
+            --gray: #6c757d;
+            --text-color: #333;
+            --bg-color: #f5f7fb;
+            --card-bg: #ffffff;
+            --header-bg: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            --border-color: #dee2e6;
+            --input-bg: #ffffff;
+            --text-muted: #6c757d;
+            --preview-bg: #f8f9fa;
+            --meta-bg: #f8f9fa;
+        }
+        
+        [data-theme="dark"] {
+            --primary: #5a76ff;
+            --primary-dark: #4a5ad4;
+            --light: #1a1c23;
+            --dark: #f8f9fa;
+            --gray: #a0a8b0;
+            --text-color: #e0e0e0;
+            --bg-color: #121418;
+            --card-bg: #1e2229;
+            --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
+            --border-color: #2d333b;
+            --input-bg: #252b33;
+            --text-muted: #a0a8b0;
+            --preview-bg: #1e2229;
+            --meta-bg: #252b33;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .file-detail-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            transition: background-color 0.3s;
+        }
+        
+        .file-header {
+            background: var(--header-bg);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-title {
+            font-size: 24px;
+            font-weight: 500;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .file-info {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .file-content {
+            padding: 25px;
+        }
+        
+        .preview-container {
+            background-color: var(--preview-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .video-player {
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 5px;
+            background: black;
+        }
+        
+        .pdf-viewer {
+            width: 100%;
+            height: 80vh;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            transition: border-color 0.3s;
+        }
+        
+        .text-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: var(--preview-bg);
+            padding: 20px;
+            border-radius: 5px;
+            max-height: 70vh;
+            overflow: auto;
+            width: 100%;
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn-download {
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+        }
+        
+        .btn-download:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+        
+        .file-meta {
+            background: var(--meta-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+        
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .meta-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+        
+        .meta-value {
+            font-weight: 500;
+            margin-top: 5px;
+            color: var(--text-color);
+            transition: color 0.3s;
+        }
+        
+        .unsupported-container {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .unsupported-icon {
+            font-size: 64px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            transition: color 0.3s;
+        }
+
+        .pdf-viewer {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            background: var(--preview-bg);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+
+        .pdf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .page-info {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-color);
+            transition: color 0.3s;
+        }
+
+        .pdf-pages-container {
+            max-width: 100%;
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        .pdf-pages-container canvas {
+            max-width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 0 auto;
+        }
+        
+        .theme-switch-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+        }
+        
+        #theme-toggle {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch-container">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+
+    <div class="file-detail-container">
+        <div class="file-header">
+            <div>
+                <h1 class="file-title">
+                    <i class="bi bi-file-earmark"></i>
+                    <span id="file-name">文件详情</span>
+                </h1>
+                <div class="file-info">
+                    <span id="file-size"></span>
+                    <span id="file-type"></span>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <a href="#" id="download-btn" class="btn btn-download">
+                    <i class="bi bi-download"></i> 下载文件
+                </a>
+                <a href="javascript:history.back(-1)" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> 返回
+                </a>
+            </div>
+        </div>
+        
+        <div class="file-content">
+            <div class="preview-container" id="preview-container">
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-3">正在加载文件预览...</p>
+                </div>
+            </div>
+            
+            <div class="file-meta">
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-label">上传时间</span>
+                        <span class="meta-value" id="upload-time"></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">最后修改</span>
+                        <span class="meta-value" id="modified-time"></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">下载次数(显示错误)</span>
+                        <span class="meta-value" id="download-count"></span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">文件类型</span>
+                        <span class="meta-value" id="file-type-full"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从URL获取文件名
+            const params = new URLSearchParams(window.location.search);
+            const filename = params.get('file');
+            
+            if (!filename) {
+                alert('未指定文件');
+                window.location.href = '/';
+                return;
+            }
+            
+            // 设置文件名
+            document.getElementById('file-name').textContent = filename;
+            
+            // 获取文件信息
+            fetch(`/api/file_info?filename=${encodeURIComponent(filename)}`)
+                .then(response => response.json())
+                .then(fileInfo => {
+                    if (!fileInfo) {
+                        throw new Error('文件信息获取失败');
+                    }
+                    
+                    // 更新文件信息
+                    document.getElementById('file-size').textContent = formatBytes(fileInfo.size);
+                    document.getElementById('download-count').textContent = fileInfo.download_count || 0;
+                    
+                    // 设置时间信息
+                    if (fileInfo.created) {
+                        document.getElementById('upload-time').textContent = new Date(fileInfo.created * 1000).toLocaleString();
+                    }
+                    
+                    if (fileInfo.modified) {
+                        document.getElementById('modified-time').textContent = new Date(fileInfo.modified * 1000).toLocaleString();
+                    }
+                    
+                    // 设置下载链接
+                    document.getElementById('download-btn').href = `/download/${encodeURIComponent(filename)}`;
+                    
+                    // 根据文件类型渲染预览
+                    renderPreview(filename, fileInfo);
+                })
+                .catch(error => {
+                    console.error('获取文件信息失败:', error);
+                    document.getElementById('preview-container').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> 加载文件信息失败: ${error.message}
+                        </div>
+                    `;
+                });
+            
+            // 格式化文件大小
+            function formatBytes(bytes) {
+                if (bytes === 0) return "0B";
+                
+                const k = 1024;
+                const sizes = ["B", "KB", "MB", "GB", "TB"];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+            }
+            
+            // 渲染文件预览
+            function renderPreview(filename, fileInfo) {
+                const container = document.getElementById('preview-container');
+                const ext = filename.split('.').pop().toLowerCase();
+                
+                // 设置文件类型
+                document.getElementById('file-type').textContent = ext.toUpperCase();
+                document.getElementById('file-type-full').textContent = getFileTypeDescription(ext);
+                
+                // 根据文件类型渲染预览
+                if (isImage(ext)) {
+                    container.innerHTML = `
+                        <img src="/download/${encodeURIComponent(filename)}" 
+                             class="image-preview" alt="${filename}">
+                    `;
+                } 
+                else if (isVideo(ext)) {
+                    container.innerHTML = `
+                        <video controls class="video-player">
+                            <source src="/download/${encodeURIComponent(filename)}" type="video/${ext === 'mp4' ? 'mp4' : ext}">
+                            您的浏览器不支持视频播放
+                        </video>
+                    `;
+                } 
+                else if (ext === 'pdf') {
+                    container.innerHTML = `
+                        <div id="pdf-viewer" class="pdf-viewer"></div>
+                    `;
+                    
+                    // 使用PDF.js渲染PDF
+                    renderPDF(filename);
+                } 
+                else if (ext === 'txt') {
+                    // 获取文本内容（添加编码处理）
+                    fetch(`/download/${encodeURIComponent(filename)}`)
+                        .then(response => {
+                            const reader = response.body.getReader();
+                            return new ReadableStream({
+                                start(controller) {
+                                    function push() {
+                                        reader.read().then(({ done, value }) => {
+                                            if (done) {
+                                                controller.close();
+                                                return;
+                                            }
+                                            controller.enqueue(value);
+                                            push();
+                                        });
+                                    }
+                                    push();
+                                }
+                            });
+                        })
+                        .then(stream => new Response(stream))
+                        .then(response => response.arrayBuffer())
+                        .then(buffer => {
+                            // 尝试多种编码格式
+                            const encodings = ['utf-8', 'gbk', 'gb2312', 'latin1'];
+                            let decodedText = null;
+                    
+                            for (const encoding of encodings) {
+                                try {
+                                    const decoder = new TextDecoder(encoding);
+                                    decodedText = decoder.decode(buffer);
+                                    // 检查是否有乱码字符
+                                    if (!/�/.test(decodedText)) {
+                                        break;
+                                    }
+                                } catch (e) {
+                                    console.warn(`Failed to decode with ${encoding}:`, e);
+                                }
+                            }
+                    
+                            if (!decodedText) {
+                                throw new Error('无法解码文件内容');
+                            }
+                    
+                            container.innerHTML = `
+                                <pre class="text-content">${decodedText}</pre>
+                            `;
+                        })
+                        .catch(error => {
+                            container.innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> 加载文本内容失败: ${error.message}
+                                </div>
+                            `;
+                        });
+                } 
+                else if (isAudio(ext)) {
+                    // 添加音频播放器
+                    container.innerHTML = `
+                        <audio controls class="audio-player" style="width: 100%;">
+                            <source src="/download/${encodeURIComponent(filename)}" type="audio/${ext === 'mp3' ? 'mpeg' : ext}">
+                            您的浏览器不支持音频播放
+                        </audio>
+                    `;
+                }
+                else {
+                    container.innerHTML = `
+                        <div class="unsupported-container">
+                            <i class="bi bi-file-earmark-x unsupported-icon"></i>
+                            <h4>不支持在线预览</h4>
+                            <p class="text-muted">此文件类型不支持在线预览，请下载后查看</p>
+                            <a href="/download/${encodeURIComponent(filename)}" class="btn btn-primary mt-3">
+                                <i class="bi bi-download"></i> 下载文件
+                            </a>
+                        </div>
+                    `;
+                }
+            }
+            
+            // 渲染PDF
+                function renderPDF(filename) {
+        const container = document.getElementById('preview-container');
+        
+        // 设置加载状态
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">加载中...</span>
+                </div>
+                <p class="mt-2">正在加载PDF文档...</p>
+            </div>
+        `;
+        
+        const pdfUrl = `/download/${encodeURIComponent(filename)}`;
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        
+        // 设置PDF.js工作路径
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+        
+        // 添加跨域支持
+        const loadingTask = pdfjsLib.getDocument({
+            url: pdfUrl,
+            withCredentials: false, // 允许跨域
+            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+            cMapPacked: true
+        });
+        
+        loadingTask.promise.then(pdf => {
+            // 清除容器
+            container.innerHTML = '<div id="pdf-viewer" class="pdf-viewer"></div>';
+            const pdfViewer = document.getElementById('pdf-viewer');
+            
+            // 创建分页控制
+            const pageControls = document.createElement('div');
+            pageControls.className = 'pdf-controls mb-3';
+            pageControls.innerHTML = `
+                <button class="btn btn-sm btn-outline-primary prev-page">
+                    <i class="bi bi-arrow-left"></i> 上一页
+                </button>
+                <span class="page-info mx-2">第 <span id="current-page">1</span> 页 / 共 <span id="total-pages">0</span> 页</span>
+                <button class="btn btn-sm btn-outline-primary next-page">
+                    下一页 <i class="bi bi-arrow-right"></i>
+                </button>
+            `;
+            pdfViewer.appendChild(pageControls);
+            
+            const totalPages = pdf.numPages;
+            document.getElementById('total-pages').textContent = totalPages;
+            
+            // 创建画布容器
+            const canvasContainer = document.createElement('div');
+            canvasContainer.className = 'pdf-pages-container';
+            pdfViewer.appendChild(canvasContainer);
+            
+            // 渲染第一页
+            let currentPage = 1;
+            renderPage(pdf, currentPage, canvasContainer);
+            
+            // 添加分页事件
+            document.querySelector('.prev-page').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderPage(pdf, currentPage, canvasContainer);
+                    document.getElementById('current-page').textContent = currentPage;
+                }
+            });
+            
+            document.querySelector('.next-page').addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderPage(pdf, currentPage, canvasContainer);
+                    document.getElementById('current-page').textContent = currentPage;
+                }
+            });
+        }).catch(error => {
+            console.error('PDF加载失败:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> PDF加载失败
+                    <p class="mt-2">可能原因：文件损坏、浏览器不支持或文件过大、或者作者根本没有修复此问题</p>
+                    <p>请尝试<a href="${pdfUrl}" download>下载文件</a>后用本地PDF阅读器或edge浏览器打开</p>
+                </div>
+            `;
+        });
+    }
+    
+    // 渲染单页PDF
+        function renderPage(pdf, pageNumber, container) {
+        // 清除现有页面
+        container.innerHTML = '';
+        
+        pdf.getPage(pageNumber).then(page => {
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale: scale });
+            
+            // 准备canvas渲染
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            // 添加到容器
+            container.appendChild(canvas);
+            
+            // 渲染PDF页面到canvas
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport
+            };
+            
+            const renderTask = page.render(renderContext);
+            
+            renderTask.promise.then(() => {
+                console.log(`页面 ${pageNumber} 渲染完成`);
+            }).catch(error => {
+                console.error('页面渲染错误:', error);
+                container.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 页面渲染失败
+                    </div>
+                `;
+            });
+        }).catch(error => {
+            console.error('获取页面失败:', error);
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> 无法获取PDF页面
+                </div>
+            `;
+        });
+    }
+            
+            // 检查是否为图片
+            function isImage(ext) {
+                return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext);
+            }
+            
+            // 检查是否为视频
+            function isVideo(ext) {
+                return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext);
+            }
+            
+            // 检查是否为音频
+            function isAudio(ext) {
+                return ['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext);
+            }
+
+            // 获取文件类型描述
+            function getFileTypeDescription(ext) {
+                const types = {
+                    'jpg': 'JPEG 图片',
+                    'jpeg': 'JPEG 图片',
+                    'png': 'PNG 图片',
+                    'gif': 'GIF 图片',
+                    'bmp': '位图图片',
+                    'webp': 'WebP 图片',
+                    'mp4': 'MP4 视频',
+                    'webm': 'WebM 视频',
+                    'ogg': 'OGG 视频',
+                    'mov': 'QuickTime 视频',
+                    'avi': 'AVI 视频',
+                    'pdf': 'PDF 文档',
+                    'txt': '文本文件',
+                    'doc': 'Word 文档',
+                    'docx': 'Word 文档',
+                    'xls': 'Excel 表格',
+                    'xlsx': 'Excel 表格',
+                    'ppt': 'PowerPoint 演示',
+                    'pptx': 'PowerPoint 演示',
+                    'zip': 'ZIP 压缩文件',
+                    'rar': 'RAR 压缩文件',
+                    '7z': '7-Zip 压缩文件',
+                    'mp3': 'MP3 音频文件',
+                    'wav': 'WAV 音频文件',
+                    'ogg': 'OGG 音频文件',
+                    'flac': 'FLAC 音频文件',
+                    'aac': 'AAC 音频文件'
+                };
+                
+                return types[ext] || '未知文件类型';
+            }
+        });
+    </script>
+
+    <script>
+        // 深色模式切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.className = 'bi bi-moon';
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.className = 'bi bi-sun';
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

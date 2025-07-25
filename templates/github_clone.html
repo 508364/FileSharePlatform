@@ -84,9 +84,173 @@
             gap: 10px;
             margin-top: 10px;
         }
+
+        /* 深色模式变量 */
+        :root {
+            --primary: #4361ee;
+            --text-color: #333;
+            --bg-color: #f5f7fb;
+            --card-bg: #ffffff;
+            --header-bg: linear-gradient(135deg, #24292e, #2b3137);
+            --border-color: #dee2e6;
+            --input-bg: #ffffff;
+            --text-muted: #6c757d;
+            --github-body-bg: #f6f8fa;
+            --task-card-bg: #ffffff;
+        }
+        
+        [data-theme="dark"] {
+            --primary: #5a76ff;
+            --text-color: #e0e0e0;
+            --bg-color: #121418;
+            --card-bg: #1e2229;
+            --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
+            --border-color: #2d333b;
+            --input-bg: #252b33;
+            --text-muted: #a0a8b0;
+            --github-body-bg: #1a1c23;
+            --task-card-bg: #252b33;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .github-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        
+        .github-header {
+            background: var(--header-bg);
+            color: white;
+            padding: 15px 20px;
+        }
+        
+        .github-body {
+            padding: 20px;
+            background-color: var(--github-body-bg);
+            transition: background-color 0.3s;
+        }
+        
+        .task-card {
+            background-color: var(--task-card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .task-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .status-cloning {
+            background-color: #0d6efd;
+            color: white;
+        }
+        
+        .status-completed {
+            background-color: #198754;
+            color: white;
+        }
+        
+        .status-failed {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .status-cancelled {
+            background-color: #ffc107;
+            color: black;
+        }
+        
+        .progress {
+            height: 8px;
+            margin: 10px 0;
+            background-color: var(--input-bg);
+        }
+        
+        .progress-bar {
+            background-color: var(--primary);
+        }
+        
+        .speed-badge {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .theme-switch-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+        }
+        
+        #theme-toggle {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        .form-control {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-color: var(--primary);
+        }
+        
+        .alert {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
     </style>
 </head>
 <body>
+    <div class="theme-switch-container">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+
     <div class="container py-4">
         <div class="github-card">
 
@@ -434,6 +598,40 @@
             
             // 每5秒刷新一次任务状态
             setInterval(loadTasks, 5000);
+        });
+    </script>
+
+    <script>
+        // 深色模式切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.className = 'bi bi-moon';
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.className = 'bi bi-sun';
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                }
+            });
         });
     </script>
 </body>

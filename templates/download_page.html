@@ -119,6 +119,80 @@
             margin-right: 15px;
             color: var(--primary);
         }
+
+        /* 深色模式变量 */
+        :root {
+          --primary-light: #4361ee;
+          --primary-dark: #3a0ca3;
+          --light: #f8f9fc;
+          --dark: #212529;
+          --gray: #6c757d;
+          --text-color: #333;
+          --bg-color: #f5f7fb;
+          --card-bg: #ffffff;
+          --header-bg: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+          --border-color: #dee2e6;
+          --input-bg: #ffffff;
+          --text-muted: #6c757d;
+        }
+        
+        [data-theme="dark"] {
+          --primary-light: #5a76ff;
+          --primary-dark: #4a5ad4;
+          --light: #1a1c23;
+          --dark: #f8f9fa;
+          --gray: #a0a8b0;
+          --text-color: #e0e0e0;
+          --bg-color: #121418;
+          --card-bg: #1e2229;
+          --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
+          --border-color: #2d333b;
+          --input-bg: #252b33;
+          --text-muted: #a0a8b0;
+        }
+        
+        /* 通用深色模式覆盖 */
+        [data-theme="dark"] body {
+          background-color: var(--bg-color);
+          color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .github-card {
+          background-color: var(--card-bg);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .github-header {
+          background: var(--header-bg);
+        }
+        
+        [data-theme="dark"] .text-muted {
+          color: var(--text-muted) !important;
+        }
+        
+        [data-theme="dark"] .form-control {
+          background-color: var(--input-bg);
+          color: var(--text-color);
+          border-color: var(--border-color);
+        }
+        
+        .theme-switch-container {
+          position: fixed;
+          top: 15px;
+          right: 15px;
+          z-index: 1000;
+        }
+        
+        #theme-toggle {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: none;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        [data-theme="dark"] #theme-toggle {
+          background-color: rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -351,8 +425,12 @@
                                     <div class="file-type-icon">
                                         <i class="bi ${iconClass}"></i>
                                     </div>
+                                    
                                     <div class="flex-grow-1">
                                         <h5 class="card-title mb-1">${file.name}</h5>
+                                        <div>
+                                            <a href="/file_detail?file=${ file.name }">查看详情</a>
+                                        </div>
                                         <div class="file-info">
                                             <span>${formatBytes(file.size)}</span>
                                             <span>上传于: ${modifiedDate}</span>

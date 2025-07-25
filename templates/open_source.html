@@ -161,9 +161,89 @@
             color: var(--gray);
             font-size: 1rem;
         }
+
+        /* 深色模式变量 */
+        :root {
+          --primary-light: #4361ee;
+          --primary-dark: #3a0ca3;
+          --light: #f8f9fc;
+          --dark: #212529;
+          --gray: #6c757d;
+          --text-color: #333;
+          --bg-color: #f5f7fb;
+          --card-bg: #ffffff;
+          --header-bg: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+          --border-color: #dee2e6;
+          --input-bg: #ffffff;
+          --text-muted: #6c757d;
+        }
+        
+        [data-theme="dark"] {
+          --primary-light: #5a76ff;
+          --primary-dark: #4a5ad4;
+          --light: #1a1c23;
+          --dark: #f8f9fa;
+          --gray: #a0a8b0;
+          --text-color: #e0e0e0;
+          --bg-color: #121418;
+          --card-bg: #1e2229;
+          --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
+          --border-color: #2d333b;
+          --input-bg: #252b33;
+          --text-muted: #a0a8b0;
+        }
+        
+        /* 通用深色模式覆盖 */
+        [data-theme="dark"] body {
+          background-color: var(--bg-color);
+          color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .github-card {
+          background-color: var(--card-bg);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .github-header {
+          background: var(--header-bg);
+        }
+        
+        [data-theme="dark"] .text-muted {
+          color: var(--text-muted) !important;
+        }
+        
+        [data-theme="dark"] .form-control {
+          background-color: var(--input-bg);
+          color: var(--text-color);
+          border-color: var(--border-color);
+        }
+        
+        .theme-switch-container {
+          position: fixed;
+          top: 15px;
+          right: 15px;
+          z-index: 1000;
+        }
+        
+        #theme-toggle {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: white;
+          border: none;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        [data-theme="dark"] #theme-toggle {
+          background-color: rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body>
+    <div class="theme-switch-container">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+
     <!-- 头部区域 -->
     <header class="header">
         <div class="container">
@@ -408,7 +488,7 @@
                 <div class="col-md-4">
                     <h5>开源许可</h5>
                     <p>本项目遵循MIT开源许可证。</p>
-                    <p>2025 工具作者508364</p>
+                    <p>© 2025 工具作者508364</p>
                 </div>
             </div>
             <hr class="mt-4 mb-4" style="background-color: rgba(255,255,255,0.1);">
@@ -442,6 +522,40 @@
                         }
                     });
                 });
+            });
+        });
+    </script>
+
+    <script>
+        // 深色模式切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.className = 'bi bi-moon';
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.className = 'bi bi-sun';
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                }
             });
         });
     </script>

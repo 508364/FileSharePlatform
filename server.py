@@ -28,6 +28,15 @@ from flask import Flask, render_template, send_from_directory, request, jsonify,
 from urllib.parse import urlparse
 from urllib3.util.retry import Retry
 from requests.adapters import HTTPAdapter
+try:
+    from json import JSONDecodeError
+except ImportError:
+    # 对于旧版本Python，从requests库导入
+    from requests.exceptions import JSONDecodeError
+
+# 确保json模块有JSONDecodeError属性
+if not hasattr(json, 'JSONDecodeError'):
+    json.JSONDecodeError = JSONDecodeError
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # 添加密钥用于session管理
@@ -46,7 +55,7 @@ DEFAULT_CONFIG = {
     'max_file_size': 100,  # MB
     'max_total_size': 1024,  # MB
     'app_name': '文件共享平台',
-    'app_version': '1.4',
+    'app_version': '1.5',
     'admin_user': 'admin',
     'admin_password': 'admin@123',
     'port': 5000,  # 添加端口配置
@@ -1221,6 +1230,48 @@ def get_sysinfo():
 def download_page():
     """文件下载中心页面"""
     return render_template('download_page.html')
+
+#文件详情页面路由
+@app.route('/file_detail')
+def file_detail():
+    """文件详情页"""
+    filename = request.args.get('file')
+    if not filename:
+        return redirect('/index')
+    
+    return render_template('file_detail.html')
+
+@app.route('/api/file_info')
+def api_file_info():
+    """获取文件信息API"""
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({"status": "error", "message": "未提供文件名"}), 400
+    
+    # 获取文件路径
+    file_path = os.path.join(system_config['upload_folder'], filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({"status": "error", "message": "文件不存在"}), 404
+    
+    # 获取文件信息
+    file_info = os.stat(file_path)
+    
+    # 获取元数据
+    metadata = load_metadata()
+    file_meta = metadata.get(filename, {})
+    
+    return jsonify({
+        "filename": filename,
+        "size": file_info.st_size,
+        "created": file_info.st_ctime,
+        "modified": file_info.st_mtime,
+        "download_count": file_meta.get('download_count', 0)
+    })
+
+@app.route('/changelog')
+def changelog():
+    return render_template('changelog.html')
 
 # 启动服务
 if __name__ == '__main__':

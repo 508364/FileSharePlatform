@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>更新日志 - 文件共享平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --light: #f8f9fc;
+            --dark: #212529;
+            --bg-color: #ffffff;
+            --text-color: #24292e;
+            --border-color: #e1e4e8;
+            --code-bg: #f6f8fa;
+        }
+        
+        .dark-mode {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --border-color: #30363d;
+            --code-bg: #161b22;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,100 L0,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: cover;
+        }
+        
+        .toc-container {
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: var(--bg-color);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .toc-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .toc-title i {
+            margin-right: 8px;
+        }
+        
+        .toc-list {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 0;
+        }
+        
+        .toc-item {
+            margin-bottom: 8px;
+        }
+        
+        .toc-link {
+            color: var(--text-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .toc-link:hover {
+            background-color: rgba(67, 97, 238, 0.1);
+            color: var(--primary);
+        }
+        
+        .toc-link i {
+            margin-right: 8px;
+            font-size: 0.85em;
+        }
+        
+        .changelog-container {
+            background: var(--bg-color);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .title-bar h1 {
+            font-weight: 600;
+            font-size: 28px;
+            margin: 0;
+        }
+        
+        .theme-toggle {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .theme-toggle:hover {
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .theme-toggle i {
+            margin-left: 8px;
+        }
+        
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.8;
+            word-wrap: break-word;
+        }
+        
+        .markdown-body h1, 
+        .markdown-body h2, 
+        .markdown-body h3, 
+        .markdown-body h4, 
+        .markdown-body h5, 
+        .markdown-body h6 {
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+        
+        .markdown-body h1 {
+            padding-bottom: 0.3em;
+            font-size: 2em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .markdown-body h2 {
+            padding-bottom: 0.3em;
+            font-size: 1.5em;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .markdown-body h3 {
+            font-size: 1.25em;
+        }
+        
+        .markdown-body h4 {
+            font-size: 1em;
+        }
+        
+        .markdown-body ul, 
+        .markdown-body ol {
+            padding-left: 2em;
+            margin-bottom: 16px;
+        }
+        
+        .markdown-body li {
+            margin-bottom: 8px;
+        }
+        
+        .markdown-body code {
+            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: var(--code-bg);
+            border-radius: 6px;
+        }
+        
+        .markdown-body pre {
+            padding: 16px;
+            overflow: auto;
+            font-size: 85%;
+            line-height: 1.45;
+            background-color: var(--code-bg);
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        
+        .markdown-body pre code {
+            padding: 0;
+            margin: 0;
+            background: transparent;
+            border: 0;
+        }
+        
+        .markdown-body blockquote {
+            padding: 0 1em;
+            color: #57606a;
+            border-left: 0.25em solid var(--border-color);
+            margin: 0 0 16px 0;
+        }
+        
+        .loading-container {
+            text-align: center;
+            padding: 60px 0;
+        }
+        
+        .error-container {
+            text-align: center;
+            padding: 60px 0;
+            color: #d73a49;
+        }
+        
+        .last-updated {
+            font-size: 0.85em;
+            color: #6a737d;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        @media (max-width: 768px) {
+            .toc-container {
+                position: static;
+                margin-bottom: 20px;
+            }
+        }
+        
+        .floating-top-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .floating-top-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部区域 -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content text-center">
+                <h1><i class="fas fa-history"></i> 文件共享平台更新日志</h1>
+                <p class="lead">了解最新功能、改进和修复</p>
+            </div>
+        </div>
+    </header>
+    <a href="/index" class="btn btn-light position-absolute top-0 start-0 m-3"><i class="fas fa-arrow-left me-2"></i>返回</a>
+    <div class="container">
+        <div class="row">
+            <!-- 目录导航 -->
+            <div class="col-lg-3">
+                <div class="toc-container">
+                    <div class="toc-title">
+                        <i class="fas fa-list"></i> 内容导航
+                    </div>
+                    <ul class="toc-list" id="tocList">
+                        <li class="toc-item"><a href="#" class="toc-link"><i class="fas fa-spinner fa-spin"></i> 加载中...</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- 更新日志内容 -->
+            <div class="col-lg-9">
+                <div class="changelog-container">
+                    <div class="title-bar">
+                        <h1><i class="fas fa-file-alt"></i> 更新历史</h1>
+                        <div class="theme-toggle" id="themeToggle">
+                            <span id="themeText">深色模式</span> 
+                            <i class="fas fa-moon" id="themeIcon"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="markdown-body" id="changelogContent">
+                        <div class="loading-container">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                            <p class="mt-3">正在加载更新日志...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="last-updated" id="lastUpdated">
+                        <i class="fas fa-sync"></i> 最后更新时间: 加载中...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 返回顶部按钮 -->
+    <button class="floating-top-btn" id="topBtn">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+    
+    <!-- 引入必要的JavaScript库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 配置Markdown解析器
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && hljs.getLanguage(lang)) {
+                        try {
+                            return hljs.highlight(code, { language: lang }).value;
+                        } catch (e) {
+                            console.error('代码高亮错误:', e);
+                        }
+                    }
+                    return hljs.highlightAuto(code).value;
+                },
+                gfm: true,
+                breaks: true
+            });
+            
+            // 主题切换功能
+            const themeToggle = document.getElementById('themeToggle');
+            const themeText = document.getElementById('themeText');
+            const themeIcon = document.getElementById('themeIcon');
+            const htmlElement = document.documentElement;
+            
+            // 检查本地存储的主题设置
+            const savedTheme = localStorage.getItem('changelogTheme');
+            if (savedTheme === 'dark') {
+                htmlElement.classList.add('dark-mode');
+                themeText.textContent = '浅色模式';
+                themeIcon.className = 'fas fa-sun';
+            }
+            
+            themeToggle.addEventListener('click', function() {
+                htmlElement.classList.toggle('dark-mode');
+                
+                if (htmlElement.classList.contains('dark-mode')) {
+                    themeText.textContent = '浅色模式';
+                    themeIcon.className = 'fas fa-sun';
+                    localStorage.setItem('changelogTheme', 'dark');
+                } else {
+                    themeText.textContent = '深色模式';
+                    themeIcon.className = 'fas fa-moon';
+                    localStorage.setItem('changelogTheme', 'light');
+                }
+            });
+            
+            // 返回顶部按钮功能
+            const topBtn = document.getElementById('topBtn');
+            
+            window.addEventListener('scroll', function() {
+                if (window.pageYOffset > 300) {
+                    topBtn.classList.add('visible');
+                } else {
+                    topBtn.classList.remove('visible');
+                }
+            });
+            
+            topBtn.addEventListener('click', function() {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // 获取更新日志内容
+            const changelogUrl = 'https://raw.githubusercontent.com/508364/FileSharePlatform/main/Changelog.md';
+            const changelogContent = document.getElementById('changelogContent');
+            const tocList = document.getElementById('tocList');
+            const lastUpdated = document.getElementById('lastUpdated');
+            
+            fetch(changelogUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('网络响应异常');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    // 渲染Markdown内容
+                    changelogContent.innerHTML = marked.parse(data);
+                    
+                    // 生成目录
+                    generateTOC();
+                    
+                    // 更新最后修改时间
+                    updateLastModified();
+                    
+                    // 添加标题锚点
+                    addHeadingAnchors();
+                })
+                .catch(error => {
+                    console.error('加载更新日志失败:', error);
+                    changelogContent.innerHTML = `
+                        <div class="error-container">
+                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                            <h3>加载更新日志失败</h3>
+                            <p class="mt-2">${error.message}</p>
+                            <p>请检查网络连接后<a href="javascript:location.reload()">刷新页面</a></p>
+                        </div>
+                    `;
+                    tocList.innerHTML = `
+                        <li class="toc-item">
+                            <a href="#" class="toc-link">
+                                <i class="fas fa-exclamation-triangle"></i> 加载失败
+                            </a>
+                        </li>
+                    `;
+                });
+            
+            // 生成目录
+            function generateTOC() {
+                const headings = changelogContent.querySelectorAll('h1, h2');
+                let tocHTML = '';
+                
+                if (headings.length === 0) {
+                    tocHTML = '<li class="toc-item"><a href="#" class="toc-link"><i class="fas fa-info-circle"></i> 无章节标题</a></li>';
+                    tocList.innerHTML = tocHTML;
+                    return;
+                }
+                
+                headings.forEach(heading => {
+                    const level = heading.tagName.substring(1);
+                    const text = heading.textContent;
+                    const anchor = heading.id;
+                    
+                    tocHTML += `
+                        <li class="toc-item">
+                            <a href="#${anchor}" class="toc-link" data-level="${level}">
+                                <i class="fas fa-${level === '1' ? 'star' : 'circle'}"></i> ${text}
+                            </a>
+                        </li>
+                    `;
+                });
+                
+                tocList.innerHTML = tocHTML;
+                
+                // 添加目录项点击事件
+                document.querySelectorAll('.toc-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href');
+                        const targetElement = document.querySelector(targetId);
+                        
+                        if (targetElement) {
+                            window.scrollTo({
+                                top: targetElement.offsetTop - 20,
+                                behavior: 'smooth'
+                            });
+                        }
+                    });
+                });
+            }
+            
+            // 为标题添加锚点
+            function addHeadingAnchors() {
+                const headings = changelogContent.querySelectorAll('h1, h2, h3');
+                
+                headings.forEach(heading => {
+                    const text = heading.textContent;
+                    const anchor = text.toLowerCase().replace(/[^\w]+/g, '-');
+                    heading.id = anchor;
+                    
+                    const anchorLink = document.createElement('a');
+                    anchorLink.href = `#${anchor}`;
+                    anchorLink.className = 'heading-anchor';
+                    anchorLink.innerHTML = '<i class="fas fa-link"></i>';
+                    anchorLink.style.marginLeft = '10px';
+                    anchorLink.style.opacity = '0';
+                    anchorLink.style.transition = 'opacity 0.3s';
+                    anchorLink.style.color = 'inherit';
+                    anchorLink.style.fontSize = '0.8em';
+                    
+                    heading.appendChild(anchorLink);
+                    
+                    heading.addEventListener('mouseenter', function() {
+                        anchorLink.style.opacity = '1';
+                    });
+                    
+                    heading.addEventListener('mouseleave', function() {
+                        anchorLink.style.opacity = '0';
+                    });
+                });
+            }
+            
+            // 更新最后修改时间
+            function updateLastModified() {
+                const now = new Date();
+                lastUpdated.innerHTML = `
+                    <i class="fas fa-sync"></i> 最后更新时间: ${now.toLocaleDateString()} ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
