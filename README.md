@@ -83,7 +83,7 @@ gunicorn --bind 0.0.0.0:5000 server:app
 
 ### 4. 访问界面
 
-- 主页面：http://localhost:5000
+- 主页面：http://localhost:5000/index
 - 管理后台：http://localhost:5000/admin
 - 开源协议：http://localhost:5000/open_source.html
 
