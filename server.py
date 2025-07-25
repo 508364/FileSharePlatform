@@ -46,7 +46,7 @@ DEFAULT_CONFIG = {
     'max_file_size': 100,  # MB
     'max_total_size': 1024,  # MB
     'app_name': '文件共享平台',
-    'app_version': '1.3',
+    'app_version': '1.4',
     'admin_user': 'admin',
     'admin_password': 'admin@123',
     'port': 5000,  # 添加端口配置
@@ -518,10 +518,97 @@ class GitHubCloneThread(threading.Thread):
 github_clone_thread = GitHubCloneThread()
 github_clone_thread.start()
 
+# 确保上传目录存在
+if not os.path.exists(system_config['upload_folder']):
+    os.makedirs(system_config['upload_folder'])
+
+# 多文件上传队列
+upload_queue = queue.Queue()
+upload_tasks = {}
+upload_lock = threading.Lock()
+
+# 多文件上传线程
+class UploadThread(threading.Thread):
+    def __init__(self):
+        super().__init__(daemon=True)
+        self.running = True
+        
+    def run(self):
+        while self.running:
+            try:
+                task = upload_queue.get(timeout=1)
+                task.upload()
+                upload_queue.task_done()
+            except queue.Empty:
+                pass
+    
+    def stop(self):
+        self.running = False
+
+# 启动上传线程
+upload_thread = UploadThread()
+upload_thread.start()
+
+# 上传任务类
+class UploadTask:
+    def __init__(self, file, task_id):
+        self.file = file
+        self.task_id = task_id
+        self.filename = secure_filename(file.filename)
+        self.status = 'queued'
+        self.progress = 0
+        self.start_time = time.time()
+        self.error = None
+    
+    def upload(self):
+        try:
+            self.status = 'uploading'
+            
+            # 更新任务状态
+            with upload_lock:
+                upload_tasks[self.task_id] = {
+                    'status': self.status,
+                    'progress': self.progress,
+                    'filename': self.filename
+                }
+            
+            # 创建文件路径
+            file_path = os.path.join(system_config['upload_folder'], self.filename)
+            
+            # 处理重名文件
+            counter = 1
+            name, ext = os.path.splitext(self.filename)
+            while os.path.exists(file_path):
+                new_name = f"{name}_{counter}{ext}"
+                file_path = os.path.join(system_config['upload_folder'], new_name)
+                counter += 1
+                self.filename = new_name
+            
+            # 保存文件
+            self.file.save(file_path)
+            
+            # 更新状态
+            self.status = 'completed'
+            self.progress = 100
+            
+        except Exception as e:
+            self.status = 'failed'
+            self.error = str(e)
+        
+        finally:
+            # 更新任务状态
+            with upload_lock:
+                upload_tasks[self.task_id] = {
+                    'status': self.status,
+                    'progress': self.progress,
+                    'filename': self.filename,
+                    'error': self.error
+                }
+
 # 路由处理
 
 # 登录路由
-# 先定义/admin路由
+# 定义admin路由
 @app.route('/admin')
 def admin():
     # 检查管理员登录状态
@@ -582,7 +669,7 @@ def admin_login():
             return jsonify({"status": "success", "token": session_token})
         return jsonify({"status": "error", "message": "无效凭据"}), 401
 
-@app.route('/')
+@app.route('/index')
 def index():
     disk = get_disk_usage()
     files = get_file_list()
@@ -1030,6 +1117,111 @@ def clear_github_clone_tasks():
             "remaining_count": len(github_clone_tasks)
         })
 
+#多文件上传路由
+@app.route('/multi_upload', methods=['GET'])
+def upload_multi_page():
+    """多文件上传页面"""
+    return render_template('multi_upload.html',
+                           app_name=system_config['app_name'],
+                           max_file_size=system_config['max_file_size'],
+                           max_total_size=system_config['max_total_size'],
+                           upload_folder=system_config['upload_folder']
+                           )
+
+# 多文件上传API
+@app.route('/api/multi_upload', methods=['POST'])
+def upload_multi():
+    """多文件上传API"""
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "未选择文件"}), 400
+    
+    file = request.files['file']
+    
+    # 验证文件名
+    if not file.filename or '.' not in file.filename:
+        return jsonify({"status": "error", "message": "无效的文件名"}), 400
+    
+    # 获取文件大小
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)  # 重置文件指针
+    
+    # 检查单个文件大小限制
+    max_size = system_config['max_file_size'] * 1024 * 1024
+    if file_size > max_size:
+        return jsonify({
+            "status": "error",
+            "message": f"文件大小超过限制 ({convert_size(max_size)})"
+        }), 400
+    
+    # 检查总空间
+    disk = get_disk_usage()
+    if file_size > disk['available']:
+        return jsonify({
+            "status": "error",
+            "message": f"磁盘空间不足（可用空间：{convert_size(disk['available'])}）"
+        }), 400
+    
+    # 添加全局上传锁
+    with upload_lock:
+        # 再次检查空间
+        disk = get_disk_usage()
+        if file_size > disk['available']:
+            return jsonify({
+                "status": "error",
+                "message": "空间不足，请稍后再试"
+            }), 400
+        
+        # 安全保存文件
+        filename = secure_filename(file.filename)
+        save_path = os.path.join(system_config['upload_folder'], filename)
+        
+        # 处理重名文件
+        counter = 1
+        name, ext = os.path.splitext(filename)
+        while os.path.exists(save_path):
+            new_name = f"{name}_{counter}{ext}"
+            save_path = os.path.join(system_config['upload_folder'], new_name)
+            counter += 1
+            filename = new_name
+        
+        try:
+            file.save(save_path)
+            update_metadata(filename, 'upload')
+            return jsonify({"status": "success", "filename": filename})
+        except Exception as e:
+            return jsonify({"status": "error", "message": f"保存失败: {str(e)}"}), 500
+
+# 获取磁盘空间信息API
+@app.route('/api/sysinfo', methods=['GET'])
+def get_sysinfo():
+    # 计算上传目录使用情况
+    upload_dir = system_config['upload_folder']
+    upload_usage = 0
+    
+    if os.path.exists(upload_dir):
+        for entry in os.scandir(upload_dir):
+            if entry.is_file():
+                upload_usage += entry.stat().st_size
+    
+    max_total_bytes = system_config['max_total_size'] * 1024 * 1024
+    
+    return jsonify({
+        "disk": {
+            "upload_used": upload_usage,
+            "available": max_total_bytes - upload_usage
+        },
+        "config": {
+            "max_file_size": system_config['max_file_size']
+        }
+    })
+
+# 文件下载中心页面路由
+@app.route('/')
+def download_page():
+    """文件下载中心页面"""
+    return render_template('download_page.html')
+
 # 启动服务
 if __name__ == '__main__':
     print("Registered endpoints(API接口):")
@@ -1043,6 +1235,7 @@ if __name__ == '__main__':
     print(f"上传目录: {system_config['upload_folder']}")
     print(f"总空间上限: {convert_size(system_config['max_total_size'] * 1024 * 1024)}")
     print(f"服务启动时间: {SERVICE_START_TIME}")
-    print("\n访问地址: http://localhost:5000")
-    print("管理页面: http://localhost:5000/admin/login")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("\n访问地址: http://localhost:" +  str(system_config['port']) + "/index")
+    print("管理页面: http://localhost:" + str(system_config['port']) + "/admin/login")
+    print("纯下载页面: http://localhost:" + str(system_config['port']) + "/")
+    app.run(host='0.0.0.0', port=system_config['port'], debug=True)
