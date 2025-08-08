@@ -62,15 +62,38 @@ jobs:
         
         # 所有平台特殊处理netifaces安装
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          # Windows平台使用本地构建的whl文件
-          echo "Installing netifaces from local wheel file"
-          # 检查whl文件是否存在
-          if [ -f "netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
-            pip install netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl
+          # Windows平台使用项目中预编译的whl文件
+          echo "Installing netifaces from project's precompiled wheel file"
+          
+          # 列出netifaces文件夹内容以帮助调试
+          echo "Contents of netifaces-${{ env.NETIFACES_VERSION }} folder:" || true
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            dir netifaces-${{ env.NETIFACES_VERSION }} || true
           else
-            echo "Local wheel file not found, trying to build from source"
-            pip install --no-binary :all: --verbose --timeout=120 netifaces==${{ env.NETIFACES_VERSION }}
+            ls -la netifaces-${{ env.NETIFACES_VERSION }} || true
           fi
+          
+          # 检查项目中的whl文件是否存在 (Windows使用反斜杠)
+          if [ -f "netifaces-${{ env.NETIFACES_VERSION }}\netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
+            echo "Found project's precompiled wheel file"
+            pip install "netifaces-${{ env.NETIFACES_VERSION }}\netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl"
+          # 也检查正斜杠路径，以防文件系统支持
+          elif [ -f "netifaces-${{ env.NETIFACES_VERSION }}/netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
+            echo "Found project's precompiled wheel file using alternative path"
+            pip install "netifaces-${{ env.NETIFACES_VERSION }}/netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl"
+          else
+            echo "Project's precompiled wheel file not found"
+            # 尝试使用备用路径
+            if [ -f "netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
+              pip install netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl
+            else
+              # 作为最后的后备方案，尝试从PyPI安装
+              pip install --only-binary :all: --verbose --timeout=180 netifaces==${{ env.NETIFACES_VERSION }}
+            fi
+          fi
+          
+          # 验证安装
+          python -c "import netifaces; print('netifaces version:', netifaces.__version__)" || { echo "netifaces installation failed"; exit 1; }
         elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
           # Linux平台安装编译依赖并尝试从源码编译
           sudo apt-get update && sudo apt-get install -y gcc python3-dev
@@ -98,14 +121,14 @@ jobs:
       continue-on-error: true
     
     - name: Build with PyInstaller
-      timeout-minutes: 60
+      timeout-minutes: 90
       run: |
         # 根据不同平台设置路径分隔符和优化参数
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
           separator=";"
           os_suffix="windows"
-          # Windows平台优化参数
-          optimization_flags="--log-level=WARN --noupx"
+          # Windows平台优化参数 - 禁用windowed模式以便查看输出，增加详细日志
+          optimization_flags="--log-level=DEBUG --noupx --debug=imports"
         else
           separator=":"
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
@@ -116,6 +139,11 @@ jobs:
           optimization_flags="--log-level=INFO"
         fi
         
+        # 输出构建环境信息
+        echo "Building on ${{ matrix.os }}"
+        echo "Python version: $(python --version)"
+        echo "PyInstaller version: $(pyinstaller --version)"
+        
         # 构建命令
         pyinstaller --onefile \
                     --name ${{ env.PROJECT_NAME }}-${os_suffix}-v${{ needs.get_version.outputs.VERSION }} \
@@ -123,9 +151,13 @@ jobs:
                     --add-data "static${separator}static" \
                     --icon=favicon.ico \
                     --clean \
-                    --windowed \
+                    ${{ matrix.os == 'windows-latest' && '' || '--windowed' }} \
                     $optimization_flags \
                     server.py
+        
+        # 输出构建结果信息
+        echo "Build complete. Output directory contents:" 
+        ls -la dist/
       shell: bash
     
     # Windows平台特定步骤
