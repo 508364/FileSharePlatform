@@ -65,24 +65,112 @@ jobs:
           # Windows平台使用项目中预编译的whl文件
           echo "Installing netifaces from project's precompiled wheel file"
           
+          # 输出当前工作目录以帮助调试 (跨平台兼容)
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            echo "Current working directory: %CD%" || true
+            CURRENT_DIR=%CD%
+          else
+            echo "Current working directory: $PWD" || true
+            CURRENT_DIR=$PWD
+          fi
+
           # 列出netifaces文件夹内容以帮助调试
           echo "Contents of netifaces-${{ env.NETIFACES_VERSION }} folder:" || true
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Windows命令
             dir netifaces-${{ env.NETIFACES_VERSION }} || true
+            # 额外检查绝对路径
+            echo "Checking absolute path: %CD%\\netifaces-${{ env.NETIFACES_VERSION }}" || true
+            dir "%CD%\\netifaces-${{ env.NETIFACES_VERSION }}" || true
           else
+            # Linux/Mac命令
             ls -la netifaces-${{ env.NETIFACES_VERSION }} || true
           fi
-          
-          # 检查项目中的whl文件是否存在 (Windows使用反斜杠)
-          if [ -f "netifaces-${{ env.NETIFACES_VERSION }}\netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
-            echo "Found project's precompiled wheel file"
-            pip install "netifaces-${{ env.NETIFACES_VERSION }}\netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl"
-          # 也检查正斜杠路径，以防文件系统支持
-          elif [ -f "netifaces-${{ env.NETIFACES_VERSION }}/netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
-            echo "Found project's precompiled wheel file using alternative path"
-            pip install "netifaces-${{ env.NETIFACES_VERSION }}/netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl"
+
+          # 定义whl文件名
+          WHL_FILE_NAME="netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl"
+          echo "Looking for wheel file: $WHL_FILE_NAME" || true
+
+          # 检查项目中的whl文件是否存在 (使用变量和绝对路径)
+          INSTALL_SUCCESS=false
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Windows路径检查
+            if [ -f "%CD%\\netifaces-${{ env.NETIFACES_VERSION }}\\$WHL_FILE_NAME" ]; then
+              echo "Found project's precompiled wheel file at Windows absolute path"
+              pip install "%CD%\\netifaces-${{ env.NETIFACES_VERSION }}\\$WHL_FILE_NAME"
+              INSTALL_SUCCESS=true
+            elif [ -f "netifaces-${{ env.NETIFACES_VERSION }}\\$WHL_FILE_NAME" ]; then
+              echo "Found project's precompiled wheel file with Windows relative path"
+              pip install "netifaces-${{ env.NETIFACES_VERSION }}\\$WHL_FILE_NAME"
+              INSTALL_SUCCESS=true
+            elif [ -f "$WHL_FILE_NAME" ]; then
+              echo "Found wheel file in current directory"
+              pip install "$WHL_FILE_NAME"
+              INSTALL_SUCCESS=true
+            fi
           else
-            echo "Project's precompiled wheel file not found"
+            # Linux/Mac路径检查
+            if [ -f "$PWD/netifaces-${{ env.NETIFACES_VERSION }}/$WHL_FILE_NAME" ]; then
+              echo "Found project's precompiled wheel file at Linux/Mac absolute path"
+              pip install "$PWD/netifaces-${{ env.NETIFACES_VERSION }}/$WHL_FILE_NAME"
+              INSTALL_SUCCESS=true
+            elif [ -f "netifaces-${{ env.NETIFACES_VERSION }}/$WHL_FILE_NAME" ]; then
+              echo "Found project's precompiled wheel file with Linux/Mac relative path"
+              pip install "netifaces-${{ env.NETIFACES_VERSION }}/$WHL_FILE_NAME"
+              INSTALL_SUCCESS=true
+            elif [ -f "$WHL_FILE_NAME" ]; then
+              echo "Found wheel file in current directory"
+              pip install "$WHL_FILE_NAME"
+              INSTALL_SUCCESS=true
+            fi
+          fi
+
+          # 如果上述路径都没找到，尝试使用备用路径
+          if [ "$INSTALL_SUCCESS" = false ]; then
+            echo "Couldn't find netifaces wheel in standard paths, trying fallback..." || true
+            
+            # 列出所有可能的whl文件以帮助调试
+            if [ "${{ matrix.os }}" = "windows-latest" ]; then
+              echo "Searching for netifaces wheel files in Windows..." || true
+              dir /s /b *netifaces*.whl || true
+            else
+              echo "Searching for netifaces wheel files in Linux/Mac..." || true
+              find . -name "*netifaces*.whl" || true
+            fi
+            
+            # 尝试使用备用路径格式
+            if [ -f "netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
+              echo "Found fallback wheel file"
+              pip install netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl
+              INSTALL_SUCCESS=true
+            else
+              # 作为最后的后备方案，尝试从PyPI安装
+              echo "Fallback wheel not found, trying to install from PyPI..." || true
+              pip install --only-binary :all: --verbose --timeout=180 netifaces==${{ env.NETIFACES_VERSION }}
+              # 检查PyPI安装是否成功
+              if python -c "import netifaces" 2>/dev/null; then
+                INSTALL_SUCCESS=true
+              fi
+            fi
+          fi
+
+          # 验证安装
+          if [ "$INSTALL_SUCCESS" = true ]; then
+            python -c "import netifaces; print('netifaces version:', netifaces.__version__)" || echo "netifaces installation verification failed"
+          else
+            echo "netifaces installation failed after all attempts" && exit 1
+          fi
+          elif [ -f "netifaces-${{ env.NETIFACES_VERSION }}\\$WHL_FILE_NAME" ]; then
+            echo "Found project's precompiled wheel file with backslash path"
+            pip install "netifaces-${{ env.NETIFACES_VERSION }}\\$WHL_FILE_NAME"
+          elif [ -f "netifaces-${{ env.NETIFACES_VERSION }}/$WHL_FILE_NAME" ]; then
+            echo "Found project's precompiled wheel file with forward slash path"
+            pip install "netifaces-${{ env.NETIFACES_VERSION }}/$WHL_FILE_NAME"
+          elif [ -f "$WHL_FILE_NAME" ]; then
+            echo "Found wheel file in current directory"
+            pip install "$WHL_FILE_NAME"
+          else
+            echo "Project's precompiled wheel file not found in any of the checked paths"
             # 尝试使用备用路径
             if [ -f "netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl" ]; then
               pip install netifaces-${{ env.NETIFACES_VERSION }}-cp${{ env.PYTHON_VERSION }}-cp${{ env.PYTHON_VERSION }}-win_amd64.whl
