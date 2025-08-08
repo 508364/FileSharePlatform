@@ -48,16 +48,22 @@ jobs:
         python -m pip install --upgrade pip
         # 所有平台特殊处理netifaces安装
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          # Windows平台安装预编译二进制包
-          pip install --only-binary :all: netifaces==0.11.0
+          # Windows平台尝试安装netifaces 0.11.0或最新版本
+          pip install --only-binary :all: netifaces==0.11.0 || pip install --only-binary :all: netifaces
         elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-          # Linux平台安装编译依赖
+          # Linux平台安装编译依赖并尝试从源码编译
           sudo apt-get update && sudo apt-get install -y gcc python3-dev
-          pip install netifaces==0.11.0
+          # 添加详细日志并设置超时
+          pip install --no-binary :all: --verbose --timeout=120 netifaces==0.11.0 || \
+          echo "Failed to install netifaces 0.11.0, trying latest version" && \
+          pip install --no-binary :all: --verbose --timeout=120 netifaces
         elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          # macOS平台安装编译依赖
+          # macOS平台安装编译依赖并尝试从源码编译
           brew install gcc || true  # 忽略brew安装失败
-          pip install netifaces==0.11.0
+          # 添加详细日志并设置超时
+          pip install --no-binary :all: --verbose --timeout=120 netifaces==0.11.0 || \
+          echo "Failed to install netifaces 0.11.0, trying latest version" && \
+          pip install --no-binary :all: --verbose --timeout=120 netifaces
         fi
         # 安装剩余依赖
         pip install -r requirements.txt
