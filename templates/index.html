@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script src="/static/js/main.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文件共享平台</title>
@@ -215,6 +213,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="/offline_download" class="nav-link">
+                            <i class="bi bi-cloud-download"></i> 离线下载
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/multi_upload">多文件上传
                         </a>
                     </li>
@@ -284,8 +287,8 @@
             <h5><i class="bi bi-files me-2"></i>文件列表</h5>
             <div class="d-flex align-items-center">
                 <div class="input-group" style="max-width: 300px;">
-                    <input type="text" class="form-control" placeholder="搜索文件..." id="search-input">
-                    <button class="btn btn-outline-secondary" type="button">
+                    <input type="text" class="form-control" placeholder="搜索功能不可用" id="search-input" disabled>
+                    <button class="btn btn-outline-secondary" type="button" disabled>
                         <i class="bi bi-search"></i>
                     </button>
                 </div>
@@ -451,6 +454,7 @@ function loadFiles() {
         </div>
     `;
     
+
     fetch('/api/files')
         .then(res => res.json())
         .then(data => {
@@ -520,7 +524,7 @@ function loadFiles() {
                     </div>
                 `;
             });
-            
+
             document.getElementById('file-list').innerHTML = html;
         })
         .catch(error => {
@@ -662,6 +666,10 @@ function formatBytes(bytes, decimals = 2) {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 themeIcon.className = 'bi bi-sun';
                 themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeIcon.className = 'bi bi-moon';
+                themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
             }
             
             // 切换主题

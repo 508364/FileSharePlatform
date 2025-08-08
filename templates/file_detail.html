@@ -162,36 +162,36 @@
         }
 
         .pdf-viewer {
-    width: 100%;
-    border: 1px solid #dee2e6;
-    border-radius: 5px;
-    padding: 15px;
-    background: #f8f9fa;
-}
+            width: 100%;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            background: #f8f9fa;
+        }
 
-.pdf-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 15px;
-}
+        .pdf-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
 
-.page-info {
-    font-size: 0.9rem;
-    font-weight: 500;
-}
+        .page-info {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
 
-.pdf-pages-container {
-    max-width: 100%;
-    overflow-x: auto;
-    text-align: center;
-}
+        .pdf-pages-container {
+            max-width: 100%;
+            overflow-x: auto;
+            text-align: center;
+        }
 
-.pdf-pages-container canvas {
-    max-width: 100%;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin: 0 auto;
-}
+        .pdf-pages-container canvas {
+            max-width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin: 0 auto;
+        }
 
         /* 深色模式变量 */
         :root {
@@ -459,7 +459,7 @@
                 <a href="#" id="download-btn" class="btn btn-download">
                     <i class="bi bi-download"></i> 下载文件
                 </a>
-                <a href="javascript:history.back(-1)" class="btn btn-outline-light">
+                <a href="javascript:history.back()" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left"></i> 返回
                 </a>
             </div>
@@ -486,7 +486,7 @@
                         <span class="meta-value" id="modified-time"></span>
                     </div>
                     <div class="meta-item">
-                        <span class="meta-label">下载次数(显示错误)</span>
+                        <span class="meta-label">下载次数</span>
                         <span class="meta-value" id="download-count"></span>
                     </div>
                     <div class="meta-item">
@@ -499,10 +499,20 @@
     </div>
 
     <!-- PDF.js 库 -->
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+    <script src="/api/pdfjs/pdf.min.js"></script>
+    <script src="/api/pdfjs/pdf.worker.min.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 确保PDF.js已加载
+            if (typeof pdfjsLib === 'undefined') {
+                console.error('PDF.js库未加载');
+                return;
+            }
+            
+            // 设置PDF.js工作路径
+            pdfjsLib.GlobalWorkerOptions.workerSrc = '/api/pdfjs/pdf.worker.min.js';
+
             // 从URL获取文件名
             const params = new URLSearchParams(window.location.search);
             const filename = params.get('file');
@@ -595,68 +605,162 @@
                     // 使用PDF.js渲染PDF
                     renderPDF(filename);
                 } 
-                else if (ext === 'txt') {
+                else if (isTextFile(ext)) {
                     // 获取文本内容（添加编码处理）
-                    fetch(`/download/${encodeURIComponent(filename)}`)
-                        .then(response => {
-                            const reader = response.body.getReader();
-                            return new ReadableStream({
-                                start(controller) {
-                                    function push() {
-                                        reader.read().then(({ done, value }) => {
-                                            if (done) {
-                                                controller.close();
-                                                return;
-                                            }
-                                            controller.enqueue(value);
-                                            push();
-                                        });
-                                    }
-                                    push();
+                fetch(`/download/${encodeURIComponent(filename)}`)
+                    .then(response => {
+                    const reader = response.body.getReader();
+                        return new ReadableStream({
+                            start(controller) {
+                                function push() {
+                                    reader.read().then(({ done, value }) => {
+                                        if (done) {
+                                            controller.close();
+                                            return;
+                                        }
+                                        controller.enqueue(value);
+                                        push();
+                                    });
                                 }
-                            });
-                        })
-                        .then(stream => new Response(stream))
-                        .then(response => response.arrayBuffer())
-                        .then(buffer => {
-                            // 尝试多种编码格式
-                            const encodings = ['utf-8', 'gbk', 'gb2312', 'latin1'];
-                            let decodedText = null;
+                        push();
+                    }
+                });
+            })
+            .then(stream => new Response(stream))
+            .then(response => response.arrayBuffer())
+            .then(buffer => {
+            // 精简但更有效的编码列表
+            const encodings = [
+                'utf-8', 'gbk', 'gb2312', 'big5', 'gb18030',
+                'iso-8859-1', 'windows-1252', 'shift_jis', 'euc-jp',
+                'euc-kr', 'iso-2022-jp', 'iso-2022-kr', 'koi8-ru', 
+                'macintosh', 'x-mac-cyrillic'
+            ];
+            
+            let decodedText = null;
+            let encodingUsed = null;
+            let success = false;
+    
+            for (const encoding of encodings) {
+                try {
+                    const decoder = new TextDecoder(encoding);
+                    decodedText = decoder.decode(buffer);
+                    encodingUsed = encoding;
                     
-                            for (const encoding of encodings) {
-                                try {
-                                    const decoder = new TextDecoder(encoding);
-                                    decodedText = decoder.decode(buffer);
-                                    // 检查是否有乱码字符
-                                    if (!/�/.test(decodedText)) {
-                                        break;
-                                    }
-                                } catch (e) {
-                                    console.warn(`Failed to decode with ${encoding}:`, e);
-                                }
-                            }
+                    // 检测乱码字符（�）
+                    if (decodedText.includes('�')) {
+                        continue; // 尝试下一个编码
+                    }
                     
-                            if (!decodedText) {
-                                throw new Error('无法解码文件内容');
-                            }
-                    
-                            container.innerHTML = `
-                                <pre class="text-content">${decodedText}</pre>
-                            `;
-                        })
-                        .catch(error => {
-                            container.innerHTML = `
-                                <div class="alert alert-danger">
-                                    <i class="bi bi-exclamation-triangle"></i> 加载文本内容失败: ${error.message}
-                                </div>
-                            `;
-                        });
-                } 
+                    success = true;
+                    break; // 成功解码则跳出循环
+                } catch (e) {
+                    // 解码失败，尝试下一个编码
+                }
+            }
+    
+            if (!success) {
+                // 如果都不行，尝试非致命解码（使用UTF-8，忽略错误）
+                try {
+                    const decoder = new TextDecoder('utf-8', { fatal: false });
+                    decodedText = decoder.decode(buffer);
+                    encodingUsed = 'utf-8 (非严格模式)';
+                    success = true;
+                } catch (e) {
+                    decodedText = null;
+                }
+            }
+    
+            if (success) {
+                container.innerHTML = `
+                    <div class="alert alert-info mb-3">
+                        检测到编码: ${encodingUsed}
+                        <button class="btn btn-sm btn-outline-primary float-end" id="change-encoding-btn">
+                            手动更改编码
+                        </button>
+                    </div>
+                    <pre class="text-content">${decodedText}</pre>
+                    <div class="encoding-selector d-none mt-3" id="encoding-selector">
+                        <div class="d-flex align-items-center">
+                            <label class="me-2">选择编码:</label>
+                            <select class="form-select me-2" id="encoding-select">
+                                ${encodings.map(enc => `<option value="${enc}" ${enc === encodingUsed ? 'selected' : ''}>${enc}</option>`).join('')}
+                            </select>
+                            <button class="btn btn-primary" id="apply-encoding-btn">应用</button>
+                        </div>
+                    </div>
+                `;
+                
+                // 添加手动更改编码功能
+                document.getElementById('change-encoding-btn').addEventListener('click', function() {
+                    document.getElementById('encoding-selector').classList.remove('d-none');
+                });
+                
+                document.getElementById('apply-encoding-btn').addEventListener('click', function() {
+                    const selectedEncoding = document.getElementById('encoding-select').value;
+                    try {
+                        const decoder = new TextDecoder(selectedEncoding);
+                        const newDecodedText = decoder.decode(buffer);
+                        document.querySelector('.text-content').textContent = newDecodedText;
+                        document.querySelector('.alert').innerHTML = `当前编码: ${selectedEncoding}`;
+                    } catch (e) {
+                        alert(`使用编码 ${selectedEncoding} 解码失败: ${e.message}`);
+                    }
+                });
+            } else {
+                // 最终失败，显示错误信息和手动编码选择器
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> 无法自动解码文件内容
+                        <p class="mt-2">请尝试手动选择编码:</p>
+                    </div>
+                    <div class="encoding-selector mt-3">
+                        <div class="d-flex align-items-center">
+                            <label class="me-2">选择编码:</label>
+                            <select class="form-select me-2" id="encoding-select">
+                                ${encodings.map(enc => `<option value="${enc}">${enc}</option>`).join('')}
+                            </select>
+                            <button class="btn btn-primary" id="apply-encoding-btn">尝试解码</button>
+                        </div>
+                    </div>
+                    <div class="text-content mt-3" id="decoded-text-area"></div>
+                `;
+                
+                document.getElementById('apply-encoding-btn').addEventListener('click', function() {
+                    const selectedEncoding = document.getElementById('encoding-select').value;
+                    try {
+                        const decoder = new TextDecoder(selectedEncoding);
+                        const decodedText = decoder.decode(buffer);
+                        document.getElementById('decoded-text-area').textContent = decodedText;
+                    } catch (e) {
+                        alert(`使用编码 ${selectedEncoding} 解码失败: ${e.message}`);
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> 加载文本内容失败: ${error.message}
+                    <p class="mt-2">请尝试<a href="/download/${encodeURIComponent(filename)}" download>下载文件</a>后用文本编辑器打开</p>
+                </div>
+            `;
+        });
+}
                 else if (isAudio(ext)) {
                     // 添加音频播放器
+                    let mimeType = 'audio/' + ext;
+                    if (ext === 'mp3') {
+                        mimeType = 'audio/mpeg';
+                    } else if (ext === 'wav') {
+                        mimeType = 'audio/wav';
+                    } else if (ext === 'ogg') {
+                        mimeType = 'audio/ogg';
+                    }
+                    
                     container.innerHTML = `
                         <audio controls class="audio-player" style="width: 100%;">
-                            <source src="/download/${encodeURIComponent(filename)}" type="audio/${ext === 'mp3' ? 'mpeg' : ext}">
+                            <source src="/download/${encodeURIComponent(filename)}" type="${mimeType}">
                             您的浏览器不支持音频播放
                         </audio>
                     `;
@@ -676,137 +780,133 @@
             }
             
             // 渲染PDF
-                function renderPDF(filename) {
-        const container = document.getElementById('preview-container');
-        
-        // 设置加载状态
-        container.innerHTML = `
-            <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">加载中...</span>
-                </div>
-                <p class="mt-2">正在加载PDF文档...</p>
-            </div>
-        `;
-        
-        const pdfUrl = `/download/${encodeURIComponent(filename)}`;
-        const pdfjsLib = window['pdfjs-dist/build/pdf'];
-        
-        // 设置PDF.js工作路径
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-        
-        // 添加跨域支持
-        const loadingTask = pdfjsLib.getDocument({
-            url: pdfUrl,
-            withCredentials: false, // 允许跨域
-            cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-            cMapPacked: true
-        });
-        
-        loadingTask.promise.then(pdf => {
-            // 清除容器
-            container.innerHTML = '<div id="pdf-viewer" class="pdf-viewer"></div>';
-            const pdfViewer = document.getElementById('pdf-viewer');
-            
-            // 创建分页控制
-            const pageControls = document.createElement('div');
-            pageControls.className = 'pdf-controls mb-3';
-            pageControls.innerHTML = `
-                <button class="btn btn-sm btn-outline-primary prev-page">
-                    <i class="bi bi-arrow-left"></i> 上一页
-                </button>
-                <span class="page-info mx-2">第 <span id="current-page">1</span> 页 / 共 <span id="total-pages">0</span> 页</span>
-                <button class="btn btn-sm btn-outline-primary next-page">
-                    下一页 <i class="bi bi-arrow-right"></i>
-                </button>
-            `;
-            pdfViewer.appendChild(pageControls);
-            
-            const totalPages = pdf.numPages;
-            document.getElementById('total-pages').textContent = totalPages;
-            
-            // 创建画布容器
-            const canvasContainer = document.createElement('div');
-            canvasContainer.className = 'pdf-pages-container';
-            pdfViewer.appendChild(canvasContainer);
-            
-            // 渲染第一页
-            let currentPage = 1;
-            renderPage(pdf, currentPage, canvasContainer);
-            
-            // 添加分页事件
-            document.querySelector('.prev-page').addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    renderPage(pdf, currentPage, canvasContainer);
-                    document.getElementById('current-page').textContent = currentPage;
-                }
-            });
-            
-            document.querySelector('.next-page').addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    renderPage(pdf, currentPage, canvasContainer);
-                    document.getElementById('current-page').textContent = currentPage;
-                }
-            });
-        }).catch(error => {
-            console.error('PDF加载失败:', error);
-            container.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle"></i> PDF加载失败
-                    <p class="mt-2">可能原因：文件损坏、浏览器不支持或文件过大、或者作者根本没有修复此问题</p>
-                    <p>请尝试<a href="${pdfUrl}" download>下载文件</a>后用本地PDF阅读器或edge浏览器打开</p>
-                </div>
-            `;
-        });
-    }
-    
-    // 渲染单页PDF
-        function renderPage(pdf, pageNumber, container) {
-        // 清除现有页面
-        container.innerHTML = '';
-        
-        pdf.getPage(pageNumber).then(page => {
-            const scale = 1.5;
-            const viewport = page.getViewport({ scale: scale });
-            
-            // 准备canvas渲染
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            // 添加到容器
-            container.appendChild(canvas);
-            
-            // 渲染PDF页面到canvas
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
-            
-            const renderTask = page.render(renderContext);
-            
-            renderTask.promise.then(() => {
-                console.log(`页面 ${pageNumber} 渲染完成`);
-            }).catch(error => {
-                console.error('页面渲染错误:', error);
+            function renderPDF(filename) {
+                const container = document.getElementById('preview-container');
+                const pdfUrl = `/download/${encodeURIComponent(filename)}`;
+                
+                // 设置加载状态
                 container.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> 页面渲染失败
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-2">正在加载PDF文档...</p>
                     </div>
                 `;
-            });
-        }).catch(error => {
-            console.error('获取页面失败:', error);
-            container.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle"></i> 无法获取PDF页面
-                </div>
-            `;
-        });
-    }
+                
+                // 创建PDF文档
+                const loadingTask = pdfjsLib.getDocument({
+                    url: pdfUrl,
+                    withCredentials: false,
+                    cMapUrl: '/api/cmaps/',
+                    cMapPacked: true
+                });
+            
+                loadingTask.promise.then(pdf => {
+                    // 清除容器
+                    container.innerHTML = '<div id="pdf-viewer" class="pdf-viewer"></div>';
+                    const pdfViewer = document.getElementById('pdf-viewer');
+                    
+                    // 创建分页控制
+                    const pageControls = document.createElement('div');
+                    pageControls.className = 'pdf-controls mb-3';
+                    pageControls.innerHTML = `
+                        <button class="btn btn-sm btn-outline-primary prev-page">
+                            <i class="bi bi-arrow-left"></i> 上一页
+                        </button>
+                        <span class="page-info mx-2">第 <span id="current-page">1</span> 页 / 共 <span id="total-pages">0</span> 页</span>
+                        <button class="btn btn-sm btn-outline-primary next-page">
+                            下一页 <i class="bi bi-arrow-right"></i>
+                        </button>
+                    `;
+                    pdfViewer.appendChild(pageControls);
+                    
+                    const totalPages = pdf.numPages;
+                    document.getElementById('total-pages').textContent = totalPages;
+                    
+                    // 创建画布容器
+                    const canvasContainer = document.createElement('div');
+                    canvasContainer.className = 'pdf-pages-container';
+                    pdfViewer.appendChild(canvasContainer);
+                    
+                    // 渲染第一页
+                    let currentPage = 1;
+                    renderPage(pdf, currentPage, canvasContainer);
+                    
+                    // 添加分页事件
+                    document.querySelector('.prev-page').addEventListener('click', () => {
+                        if (currentPage > 1) {
+                            currentPage--;
+                            renderPage(pdf, currentPage, canvasContainer);
+                            document.getElementById('current-page').textContent = currentPage;
+                        }
+                    });
+                    
+                    document.querySelector('.next-page').addEventListener('click', () => {
+                        if (currentPage < totalPages) {
+                            currentPage++;
+                            renderPage(pdf, currentPage, canvasContainer);
+                            document.getElementById('current-page').textContent = currentPage;
+                        }
+                    });
+                }).catch(error => {
+                    console.error('PDF加载失败:', error);
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> PDF加载失败
+                            <p class="mt-2">可能原因：文件损坏、浏览器不支持或文件过大</p>
+                            <p class="mt-2">!!pdf文档读取功能没有完善!!</p>
+                            <p>请尝试<a href="${pdfUrl}" download>下载文件</a>后用本地PDF阅读器或edge浏览器打开</p>
+                        </div>
+                    `;
+                });
+            }
+            
+            // 渲染单页PDF
+            function renderPage(pdf, pageNumber, container) {
+                // 清除现有页面
+                container.innerHTML = '';
+                
+                pdf.getPage(pageNumber).then(page => {
+                    const scale = 1.5;
+                    const viewport = page.getViewport({ scale: scale });
+                    
+                    // 准备canvas渲染
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    
+                    // 添加到容器
+                    container.appendChild(canvas);
+                    
+                    // 渲染PDF页面到canvas
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    
+                    const renderTask = page.render(renderContext);
+                    
+                    renderTask.promise.then(() => {
+                        console.log(`页面 ${pageNumber} 渲染完成`);
+                    }).catch(error => {
+                        console.error('页面渲染错误:', error);
+                        container.innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> 页面渲染失败
+                            </div>
+                        `;
+                    });
+                }).catch(error => {
+                    console.error('获取页面失败:', error);
+                    container.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i> 无法获取PDF页面
+                        </div>
+                    `;
+                });
+            }
             
             // 检查是否为图片
             function isImage(ext) {
@@ -823,20 +923,40 @@
                 return ['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext);
             }
 
+            // 检查是否为文本文件(包括代码文件)
+            function isTextFile(ext) {
+                return [
+                    'txt', 'md', 'markdown', 'html', 'htm', 'css', 'js', 'json',
+                    'py', 'java', 'cpp', 'c', 'h', 'hpp', 'cs', 'php', 'rb', 'go',
+                    'rs', 'sh', 'bash', 'bat', 'cmd', 'ps1', 'sql', 'xml', 'yaml',
+                    'yml', 'ini', 'conf', 'config', 'log', 'properties', 'csv',
+                    'ts', 'tsx', 'jsx', 'vue', 'less', 'scss', 'sass', 'styl'
+                ].includes(ext);
+            }
+
             // 获取文件类型描述
             function getFileTypeDescription(ext) {
                 const types = {
+                    // 图片类型
+                    'ico': '图标文件',
                     'jpg': 'JPEG 图片',
                     'jpeg': 'JPEG 图片',
                     'png': 'PNG 图片',
                     'gif': 'GIF 图片',
                     'bmp': '位图图片',
                     'webp': 'WebP 图片',
+                    // 视频类型
                     'mp4': 'MP4 视频',
                     'webm': 'WebM 视频',
                     'ogg': 'OGG 视频',
                     'mov': 'QuickTime 视频',
                     'avi': 'AVI 视频',
+                    'mkv': 'MKV 视频',
+                    'flv': 'FLV 视频',
+                    'wmv': 'WMV 视频',
+                    '3gp': '3GP 视频',
+                    'm4v': 'M4V 视频',
+                    // 文档类型
                     'pdf': 'PDF 文档',
                     'txt': '文本文件',
                     'doc': 'Word 文档',
@@ -845,16 +965,113 @@
                     'xlsx': 'Excel 表格',
                     'ppt': 'PowerPoint 演示',
                     'pptx': 'PowerPoint 演示',
+                    // 压缩包类型
                     'zip': 'ZIP 压缩文件',
                     'rar': 'RAR 压缩文件',
                     '7z': '7-Zip 压缩文件',
+                    'gz': 'GZip 压缩文件',
+                    'bz2': 'BZip2 压缩文件',                   
+                    // 音频类型
                     'mp3': 'MP3 音频文件',
                     'wav': 'WAV 音频文件',
                     'ogg': 'OGG 音频文件',
                     'flac': 'FLAC 音频文件',
-                    'aac': 'AAC 音频文件'
+                    'aac': 'AAC 音频文件',
+                    // Windows特有文件类型
+                    'exe': 'Windows可执行文件',
+                    'bat': 'Windows批处理文件',
+                    'msi': 'Windows安装程序',
+                    'dll': 'Windows动态链接库',
+                    'cmd': 'Windows命令文件',
+                    'reg': 'Windows注册表文件',
+                    'sys': 'Windows系统文件',
+                    'cab': 'Windows安装包',
+                    'inf': 'Windows安装信息文件',
+                    'scr': 'Windows屏幕保护程序',
+                    'com': 'Windows命令文件',
+                    'cpl': 'Windows控制面板项',
+                    'msc': 'Windows控制台应用程序',
+                    'ocx': 'Windows控件',
+                    'ax': 'WindowsActiveX控件',
+                    'chm': 'Windows帮助文件',
+                    'msp': 'Windows修补程序',
+                    'msu': 'Windows更新程序',
+                    'mui': 'Windows多语言界面文件',
+                    'ps1': 'Windows PowerShell脚本',
+                    'psm1': 'Windows PowerShell模块',
+                    'psd1': 'Windows PowerShell数据文件',
+                    'ps1xml': 'Windows PowerShell配置文件',
+                    'pssc': 'Windows PowerShell配置文件',
+                    'psexec': 'Windows远程执行工具',
+                    // 编程语言文件类型
+                    'sh': 'Shell脚本',
+                    'py': 'Python脚本',
+                    'java': 'Java源代码',
+                    'cpp': 'C++源代码',
+                    'c': 'C源代码',
+                    'go': 'Go源代码',
+                    'rb': 'Ruby脚本',
+                    'swift': 'Swift源代码',
+                    'rs': 'Rust源代码',
+                    'kt': 'Kotlin源代码',
+                    'h': 'C/C++头文件',
+                    // web文件类型
+                    'js': 'JavaScript脚本',
+                    'ts': 'TypeScript脚本',
+                    'php': 'PHP脚本',
+                    'html': 'HTML文件',
+                    'css': 'CSS文件',
+                    // 配置文件类型
+                    'json': 'JSON文件',
+                    'xml': 'XML文件',
+                    'yaml': 'YAML文件',
+                    'yml': 'YAML文件',
+                    'toml': 'TOML文件',
+                    'ini': 'INI文件',
+                    'conf': '配置文件',
+                    // 数据库文件类型
+                    'sql': 'SQL文件',
+                    'db': '数据库文件',
+                    'mdb': 'Microsoft Access数据库文件',
+                    'sqlite': 'SQLite数据库文件',
+                    'dbf': 'dBASE数据库文件',
+                    'accdb': 'Microsoft Access数据库文件',
+                    'mdbx': 'Microsoft Access数据库文件',
+                    'sqlitedb': 'SQLite数据库文件',
+                    'sqlite3': 'SQLite数据库文件',
+                    'sqlite2': 'SQLite数据库文件',
+                    'db3': 'SQLite数据库文件',
+                    'db2': 'SQLite数据库文件',
+                    'db4': 'SQLite数据库文件',
+                    'db5': 'SQLite数据库文件',
+                    'db6': 'SQLite数据库文件',
+                    'db7': 'SQLite数据库文件',
+                    'db8': 'SQLite数据库文件',
+                    'db9': 'SQLite数据库文件',
+                    // Mac OS特有文件类型
+                    'app': 'Mac OS应用程序',
+                    'dmg': 'Mac OS磁盘映像',
+                    'pkg': 'Mac OS安装包',
+                    'command': 'Mac OS命令文件',
+                    'plist': 'Mac OS属性列表文件',
+                    'icns': 'Mac OS图标文件',
+                    // 日志文件类型
+                    'log': '日志文件',
+                    // 其它常见文件类型
+                    'chm': '帮助文件',
+                    'md': 'Markdown文件',
+                    'csv': '逗号分隔值文件',
+                    'tsv': '制表符分隔值文件',
+                    'rtf': '富文本格式文件',
+                    'odt': 'OpenDocument文本文件',
+                    'epub': '电子书文件',
+                    'po': 'PO文件',
+                    'mo': 'MO文件',
+                    'pot': 'POT文件',
+                    'lang': '语言文件',
+                    'properties': 'Java属性文件'
                 };
-                
+
                 return types[ext] || '未知文件类型';
             }
         });

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离线下载 - 文件共享平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <script src="https://apps.bdimg.com/libs/jquery/1.9.1/jquery.js"></script>
+    <script src="./static/js/gt4.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-dark: #3a0ca3;
+            --light: #f8f9fc;
+            --dark: #212529;
+            --gray: #6c757d;
+            --light-gray: #eaecf4;
+            --border: #e3e6f0;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        [data-theme="dark"] {
+            --primary: #5a76ff;
+            --primary-dark: #4a5ad4;
+            --light: #1a1c23;
+            --dark: #f8f9fa;
+            --gray: #a0a8b0;
+            --light-gray: #252b33;
+            --border: #2d333b;
+        }
+        
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .download-container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+        
+        .download-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .download-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+        }
+        
+        [data-theme="dark"] .download-card {
+            background-color: var(--light);
+            border: 1px solid var(--border);
+        }
+        
+        .download-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .geetest-container {
+            margin: 20px 0;
+            min-height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .task-list {
+            margin-top: 30px;
+        }
+        
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+        
+        .task-item:hover {
+            background-color: rgba(74, 118, 255, 0.05);
+        }
+        
+        .task-info {
+            flex: 1;
+        }
+        
+        .task-name {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .task-url {
+            font-size: 14px;
+            color: var(--gray);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .task-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .status-queued {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .status-downloading {
+            background-color: #0d6efd;
+            color: white;
+        }
+        
+        .status-completed {
+            background-color: #198754;
+            color: white;
+        }
+        
+        .status-failed {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .progress {
+            height: 8px;
+            margin: 10px 0;
+            background-color: var(--light-gray);
+        }
+        
+        .progress-bar {
+            background-color: var(--primary);
+            transition: width 0.5s ease;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .empty-icon {
+            font-size: 64px;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+        
+        .theme-switch-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+        }
+        
+        #theme-toggle {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        [data-theme="dark"] #theme-toggle {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch-container">
+        <button id="theme-toggle" class="theme-toggle">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+    
+    <div class="download-container">
+        <div class="download-header">
+            <h1><i class="bi bi-cloud-download"></i> 离线下载</h1>
+            <p class="lead">添加URL下载任务,系统将自动下载文件到您的共享目录</p>
+        </div>
+        
+        <div class="download-card">
+            <h2><i class="bi bi-link-45deg"></i> 添加下载任务</h2>
+            
+            <form id="download-form">
+                <div class="mb-3">
+                    <label for="download-url" class="form-label">下载URL</label>
+                    <input type="url" class="form-control" id="download-url" 
+                           placeholder="https://example.com/file.zip" required>
+                </div>
+                
+                <div class="geetest-container" id="geetest-container">
+                    <div role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">
+                        <i class="bi bi-cloud-download"></i> 添加下载任务
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="download-card task-list">
+            <h2><i class="bi bi-list-task"></i> 下载任务</h2>
+            <button class="btn btn-outline-danger" id="clear-tasks-btn">
+                <i class="bi bi-trash"></i> 清空任务
+            </button>
+
+            <div id="tasks-container">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                    <p class="mt-3">正在加载下载任务...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.className = 'bi bi-moon';
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.className = 'bi bi-sun';
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                }
+            });
+            
+            // 初始化极验验证
+            const captchaId = "{{ geetest_id }}";  // 从后端获取
+            
+            if (captchaId) {
+                initGeetest4({
+                    captchaId: captchaId,
+                    product: 'float'
+                }, function(gt) {
+                    window.gt = gt;
+                    
+                    // 渲染验证码
+                    gt.appendTo("#geetest-container");
+                    
+                    // 表单提交处理
+                    document.getElementById('download-form').addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        
+                        const url = document.getElementById('download-url').value.trim();
+                        if (!url) {
+                            alert('请输入下载链接');
+                            return;
+                        }
+                        
+                        // 验证验证码
+                        if (!gt.getValidate()) {
+                            gt.showBox();
+                            return;
+                        }
+                        
+                        // 获取验证结果
+                        const result = gt.getValidate();
+                        
+                        // 禁用提交按钮
+                        const submitBtn = document.getElementById('submit-btn');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> 提交中...';
+                        
+                        // 发送请求
+                        fetch('/api/offline_download', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                url: url,
+                                geetest: result
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                alert('下载任务已添加');
+                                document.getElementById('download-url').value = '';
+                                gt.reset();
+                                loadTasks();
+                            } else {
+                                alert('错误: ' + data.message);
+                            }
+                        })
+                        .catch(error => {
+                            alert('请求失败: ' + error);
+                        })
+                        .finally(() => {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="bi bi-cloud-download"></i> 添加下载任务';
+                        });
+                    });
+                });
+            } else {
+                document.getElementById('geetest-container').innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> 验证码未配置，请联系管理员
+                    </div>
+                `;
+            }
+            
+            // 加载任务列表
+            function loadTasks() {
+                fetch('/api/offline_tasks')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            renderTasks(data.tasks);
+                        } else {
+                            document.getElementById('tasks-container').innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-triangle"></i> 加载任务失败: ${data.message}
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('tasks-container').innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="bi bi-exclamation-triangle"></i> 请求失败: ${error}
+                            </div>
+                        `;
+                    });
+            }
+            
+            function truncateUrl(url, maxLength=40) {
+                if (url.length <= maxLength) {
+                    return url;
+                }
+                return url.substring(0, maxLength/2) + '...' + url.substring(url.length - maxLength/2);
+            }
+
+            // 渲染任务列表
+            function renderTasks(tasks) {
+                if (tasks.length === 0) {
+                    document.getElementById('tasks-container').innerHTML = `
+                        <div class="empty-state">
+                            <i class="bi bi-inbox empty-icon"></i>
+                            <h4>没有下载任务</h4>
+                            <p class="text-muted">添加URL开始下载</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                tasks.forEach(task => {
+                    html += `
+                        <div class="task-item">
+                            <div class="task-info">
+                                <div class="task-name">${task.filename || task.url}</div>
+                                <div class="d-flex align-items-center">
+                                    <span class="task-status status-${task.status}">
+                                        ${task.status === 'queued' ? '等待中' : 
+                                          task.status === 'downloading' ? '下载中' : 
+                                          task.status === 'completed' ? '已完成' : '失败'}
+                                    </span>
+                                    <div class="task-url">${task.url}</div>
+                                </div>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar" style="width: ${task.progress}%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                ${task.status === 'completed' ? `
+                                    <a href="/download/${task.filename}" class="btn btn-success">
+                                        <i class="bi bi-download"></i> 下载
+                                    </a>
+                                ` : (task.status === 'queued' || task.status === 'downloading') ? `
+                                    <button onclick="cancelTask('${task.id}')" class="btn btn-danger">
+                                        <i class="bi bi-x-circle"></i> 取消
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('tasks-container').innerHTML = html;
+            }
+            
+            // 初始加载任务
+            loadTasks();
+            
+            // 每10秒刷新一次任务列表
+            setInterval(loadTasks, 3000);
+        });
+
+        // 取消任务函数
+        function cancelTask(taskId) {
+            if (confirm('确定要取消这个下载任务吗？')) {
+                fetch(`/api/offline_tasks/cancel`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ task_id: taskId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadTasks();
+                    } else {
+                        alert('取消任务失败: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('请求失败: ' + error);
+                });
+            }
+        }
+
+        // 清空任务按钮
+        document.getElementById('clear-tasks-btn').addEventListener('click', function() {
+            if (confirm('确定要清空所有已完成和失败的任务吗？')) {
+                fetch('/api/offline_tasks/clear', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadTasks();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

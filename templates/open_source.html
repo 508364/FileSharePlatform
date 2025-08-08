@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="description" content="文件共享平台使用的开源组件及许可证信息，展示了项目依赖的所有开源库及其许可条款">
     <title>开源软件列表 - 文件共享平台</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -36,6 +38,12 @@
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
             transition: all 0.3s ease;
             height: 100%;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(67, 97, 238, 0.15);
         }
         
         .card:hover {
@@ -155,6 +163,11 @@
             font-weight: 700;
             color: var(--primary);
             margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover .stat-number {
+            transform: scale(1.1);
         }
         
         .stat-label {
@@ -261,27 +274,50 @@
         </div>
     </header>
 
+    <!--极验验证-->
+    <section class="container mb-5">
+        <div class="row g-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3">
+                            <i class="bi bi-shield-check" style="font-size: 2.5rem; color: #4361ee;"></i>
+                        </div>
+                        <div>
+                            <h2 class="card-title">特别感谢:极验提供的验证服务</h2>
+                            <h3 class="card-title">GEETEST-极验</h3>
+                            <p class="card-text">全球黑产对抗引领者 - 业务安全丨业务风控丨验证码安全</p>
+                            <a href="https://www.geetest.com" target="_blank" class="btn btn-outline-primary">
+                                访问官网 <i class="bi bi-box-arrow-up-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- 统计信息 -->
     <section class="container mb-5">
         <div class="row">
             <div class="col-md-4 mb-4">
                 <div class="stat-card">
                     <i class="bi bi-github" style="font-size: 2rem; color: var(--primary);"></i>
-                    <div class="stat-number">8</div>
+                    <div class="stat-number">14</div>
                     <div class="stat-label">使用的开源项目</div>
                 </div>
             </div>
             <div class="col-md-4 mb-4">
                 <div class="stat-card">
                     <i class="bi bi-journal-code" style="font-size: 2rem; color: var(--primary);"></i>
-                    <div class="stat-number">2</div>
+                    <div class="stat-number">3</div>
                     <div class="stat-label">许可证类型</div>
                 </div>
             </div>
             <div class="col-md-4 mb-4">
                 <div class="stat-card">
                     <i class="bi bi-code-slash" style="font-size: 2rem; color: var(--primary);"></i>
-                    <div class="stat-number">3000+</div>
+                    <div class="stat-number">10000+</div>
                     <div class="stat-label">代码行数</div>
                 </div>
             </div>
@@ -309,7 +345,10 @@
                             <i class="bi bi-flower1"></i>
                         </div>
                         <h3 class="card-title">Flask</h3>
-                        <p class="text-muted">轻量级Python Web框架,提供核心服务功能</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">轻量级Python Web框架</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v2.3.3</span>
+                        </div>
                         <p><span class="license-badge license-bsd">BSD许可证</span></p>
                         <p class="card-text">Flask是一个使用Python编写的轻量级Web应用框架。基于Werkzeug WSGI工具箱和Jinja2模板引擎。</p>
                         <a href="https://flask.palletsprojects.com/" target="_blank" class="project-link">
@@ -327,7 +366,10 @@
                             <i class="bi bi-shuffle"></i>
                         </div>
                         <h3 class="card-title">Flask-Cors</h3>
-                        <p class="text-muted">Flask扩展,处理跨域资源共享(CORS)</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">Flask跨域资源共享扩展</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v3.0.10</span>
+                        </div>
                         <p><span class="license-badge license-mit">MIT许可证</span></p>
                         <p class="card-text">Flask-Cors是一个Flask扩展,用于处理跨域资源共享,使跨域AJAX请求成为可能。</p>
                         <a href="https://flask-cors.readthedocs.io/" target="_blank" class="project-link">
@@ -345,7 +387,10 @@
                             <i class="bi bi-person-badge"></i>
                         </div>
                         <h3 class="card-title">Flask-Session</h3>
-                        <p class="text-muted">Flask的会话管理扩展</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">Flask会话管理扩展</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v0.5.0</span>
+                        </div>
                         <p><span class="license-badge license-bsd">BSD许可证</span></p>
                         <p class="card-text">Flask-Session是一个扩展,为Flask应用程序添加了服务器端会话支持。</p>
                         <a href="https://flask-session.readthedocs.io/" target="_blank" class="project-link">
@@ -363,7 +408,10 @@
                             <i class="bi bi-gear"></i>
                         </div>
                         <h3 class="card-title">Werkzeug</h3>
-                        <p class="text-muted">WSGI实用工具库,Flask的核心依赖</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">WSGI实用工具库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v2.3.7</span>
+                        </div>
                         <p><span class="license-badge license-bsd">BSD许可证</span></p>
                         <p class="card-text">Werkzeug是一个全面的WSGI Web应用程序库,为Flask提供了基础支持。</p>
                         <a href="https://werkzeug.palletsprojects.com/" target="_blank" class="project-link">
@@ -381,7 +429,10 @@
                             <i class="bi bi-file-earmark-code"></i>
                         </div>
                         <h3 class="card-title">Jinja2</h3>
-                        <p class="text-muted">现代且设计友好的Python模板引擎</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">Python模板引擎</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v3.1.2</span>
+                        </div>
                         <p><span class="license-badge license-bsd">BSD许可证</span></p>
                         <p class="card-text">Jinja2是一个快速、富有表现力、可扩展的模板引擎,为Flask提供了模板渲染功能。</p>
                         <a href="https://jinja.palletsprojects.com/" target="_blank" class="project-link">
@@ -399,7 +450,10 @@
                             <i class="bi bi-cpu"></i>
                         </div>
                         <h3 class="card-title">psutil</h3>
-                        <p class="text-muted">跨平台进程和系统监控库</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">系统监控库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v5.9.5</span>
+                        </div>
                         <p><span class="license-badge license-bsd">BSD许可证</span></p>
                         <p class="card-text">psutil是一个跨平台库,用于检索Python中运行的进程和系统利用率的信息。</p>
                         <a href="https://github.com/giampaolo/psutil" target="_blank" class="project-link">
@@ -417,7 +471,10 @@
                             <i class="bi bi-wifi"></i>
                         </div>
                         <h3 class="card-title">netifaces</h3>
-                        <p class="text-muted">便携式网络接口信息获取库</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">网络接口信息库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v0.11.0</span>
+                        </div>
                         <p><span class="license-badge license-mit">MIT许可证</span></p>
                         <p class="card-text">netifaces是一个小型便携式模块,用于访问网络接口信息。</p>
                         <a href="https://github.com/al45tair/netifaces" target="_blank" class="project-link">
@@ -435,7 +492,10 @@
                             <i class="bi bi-file-earmark-text"></i>
                         </div>
                         <h3 class="card-title">python-dotenv</h3>
-                        <p class="text-muted">从.env文件读取键值对到环境变量</p>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">环境变量管理库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v1.0.0</span>
+                        </div>
                         <p><span class="license-badge license-bsd">BSD许可证</span></p>
                         <p class="card-text">python-dotenv允许应用程序从.env文件加载配置,遵循12-factor应用原则。</p>
                         <a href="https://github.com/theskumar/python-dotenv" target="_blank" class="project-link">
@@ -444,6 +504,133 @@
                     </div>
                 </div>
             </div>
+
+            <!-- chardet -->
+            <div class="col-lg-4 col-md-6" data-category="util">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-translate"></i>
+                        </div>
+                        <h3 class="card-title">chardet</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">字符编码检测库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v5.2.0</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">chardet是一个通用的字符编码检测器,可以检测文本的编码格式。</p>
+                        <a href="https://github.com/chardet/chardet" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- requests -->
+            <div class="col-lg-4 col-md-6" data-category="net">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-wifi"></i>
+                        </div>
+                        <h3 class="card-title">requests</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">HTTP请求库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v2.32.4</span>
+                        </div>
+                        <p><span class="license-badge license-apache">Apache许可证</span></p>
+                        <p class="card-text">requests是一个优雅而简单的Python HTTP库,用于发送各种HTTP请求。</p>
+                        <a href="https://requests.readthedocs.io/" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- gevent -->
+            <div class="col-lg-4 col-md-6" data-category="util">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h3 class="card-title">gevent</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">协程网络库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v23.9.1</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">gevent是一个基于libev的Python网络库,使用greenlet实现协程。</p>
+                        <a href="https://www.gevent.org/" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- greenlet -->
+            <div class="col-lg-4 col-md-6" data-category="util">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h3 class="card-title">greenlet</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">轻量级线程库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v2.0.2</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">greenlet是Python的轻量级线程库,提供了微线程的概念,支持协作式多任务。</p>
+                        <a href="https://greenlet.readthedocs.io/" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- itsdangerous -->
+            <div class="col-lg-4 col-md-6" data-category="security">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h3 class="card-title">itsdangerous</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">安全数据序列化库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v2.1.2</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">itsdangerous提供了安全的序列化和签名功能,用于保护数据不被篡改。</p>
+                        <a href="https://itsdangerous.palletsprojects.com/" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- click -->
+            <div class="col-lg-4 col-md-6" data-category="cli">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-terminal"></i>
+                        </div>
+                        <h3 class="card-title">click</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">命令行接口库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v8.1.7</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">click是一个用于创建优雅命令行接口的Python库,支持参数解析和子命令等功能。</p>
+                        <a href="https://click.palletsprojects.com/" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -456,12 +643,58 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-4">
-                        <h4><span class="license-badge license-mit me-2"></span> MIT许可证</h4>
+                        <div class="d-flex items-center mb-2">
+                            <span class="license-badge license-mit me-3"></span>
+                            <h4 class="m-0">MIT许可证</h4>
+                        </div>
                         <p class="text-muted">非常宽松的许可证,允许商业使用、修改、分发和私人使用。唯一的要求是保留版权和许可声明。</p>
+                        <div class="mt-2">
+                            <strong>主要条款:</strong>
+                            <ul class="list-disc list-inside text-muted pl-3">
+                                <li>允许商业使用</li>
+                                <li>允许修改代码</li>
+                                <li>允许分发代码</li>
+                                <li>允许私人使用</li>
+                                <li>必须包含版权和许可声明</li>
+                            </ul>
+                        </div>
                     </div>
                     <div class="col-md-6 mb-4">
-                        <h4><span class="license-badge license-bsd me-2"></span> BSD许可证</h4>
+                        <div class="d-flex items-center mb-2">
+                            <span class="license-badge license-bsd me-3"></span>
+                            <h4 class="m-0">BSD许可证</h4>
+                        </div>
                         <p class="text-muted">与MIT许可证类似,但有一些额外的限制。BSD许可证通常要求在所有副本中保留版权声明。</p>
+                        <div class="mt-2">
+                            <strong>主要条款:</strong>
+                            <ul class="list-disc list-inside text-muted pl-3">
+                                <li>允许商业使用</li>
+                                <li>允许修改代码</li>
+                                <li>允许分发代码</li>
+                                <li>允许私人使用</li>
+                                <li>必须包含版权和许可声明</li>
+                                <li>不允许使用贡献者姓名进行背书</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex items-center mb-2">
+                            <span class="license-badge license-apache me-3"></span>
+                            <h4 class="m-0">Apache许可证</h4>
+                        </div>
+                        <p class="text-muted">Apache许可证是一个 permissive 许可证,与MIT许可证类似,但包含更多细节和专利授权条款。</p>
+                        <div class="mt-2">
+                            <strong>主要条款:</strong>
+                            <ul class="list-disc list-inside text-muted pl-3">
+                                <li>允许商业使用</li>
+                                <li>允许修改代码</li>
+                                <li>允许分发代码</li>
+                                <li>允许私人使用</li>
+                                <li>必须包含版权和许可声明</li>
+                                <li>贡献者提供专利授权</li>
+                                <li>修改文件必须标记变更</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -488,22 +721,64 @@
                 <div class="col-md-4">
                     <h5>开源许可</h5>
                     <p>本项目遵循MIT开源许可证。</p>
-                    <p>© 2025 工具作者508364</p>
+                    <p>© 2025 508364.All rights reserved.</p>
                 </div>
             </div>
             <hr class="mt-4 mb-4" style="background-color: rgba(255,255,255,0.1);">
             <div class="text-center">
-                <p class="mb-0">感谢所有开源项目的贡献者,让技术世界更加美好</p>
+                <p class="mb-0">感谢所有开源项目的贡献者,开源让技术世界更加美好</p>
             </div>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* 回到顶部按钮 */
+        #back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background-color: var(--primary);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateY(20px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            z-index: 999;
+        }
+
+        #back-to-top.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        [data-theme="dark"] #back-to-top {
+            background-color: var(--primary-light);
+        }
+    </style>
     <script>
-        // 过滤功能
+        // 页面加载完成后执行
         document.addEventListener('DOMContentLoaded', function() {
+            // 平滑滚动
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // 过滤功能
             const filterButtons = document.querySelectorAll('.filter-btn');
-            const projects = document.querySelectorAll('.col-lg-4');
+            const projects = document.querySelectorAll('[data-category]');
             
             filterButtons.forEach(button => {
                 button.addEventListener('click', function() {
@@ -517,20 +792,23 @@
                     projects.forEach(project => {
                         if (filter === 'all' || project.getAttribute('data-category') === filter) {
                             project.style.display = 'block';
+                            setTimeout(() => {
+                                project.style.opacity = '1';
+                                project.style.transform = 'translateY(0)';
+                            }, 50);
                         } else {
-                            project.style.display = 'none';
+                            project.style.opacity = '0';
+                            project.style.transform = 'translateY(20px)';
+                            setTimeout(() => {
+                                project.style.display = 'none';
+                            }, 300);
                         }
                     });
                 });
             });
-        });
-    </script>
 
-    <script>
-        // 深色模式切换功能
-        document.addEventListener('DOMContentLoaded', function() {
+            // 深色模式切换功能
             const themeToggle = document.getElementById('theme-toggle');
-            const themeIcon = themeToggle.querySelector('i');
             
             // 检查本地存储或系统偏好
             const savedTheme = localStorage.getItem('theme') || 
@@ -538,7 +816,6 @@
             
             if (savedTheme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                themeIcon.className = 'bi bi-sun';
                 themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
             }
             
@@ -548,14 +825,32 @@
                 if (currentTheme === 'dark') {
                     document.documentElement.removeAttribute('data-theme');
                     localStorage.setItem('theme', 'light');
-                    themeIcon.className = 'bi bi-moon';
                     themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
                 } else {
                     document.documentElement.setAttribute('data-theme', 'dark');
                     localStorage.setItem('theme', 'dark');
-                    themeIcon.className = 'bi bi-sun';
                     themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
                 }
+            });
+        });
+            // 回到顶部按钮功能
+        const backToTopButton = document.createElement('div');
+        backToTopButton.id = 'back-to-top';
+        backToTopButton.innerHTML = '<i class="bi bi-arrow-up"></i>';
+        document.body.appendChild(backToTopButton);
+
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTopButton.classList.add('visible');
+            } else {
+                backToTopButton.classList.remove('visible');
+            }
+        });
+
+        backToTopButton.addEventListener('click', function() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
             });
         });
     </script>

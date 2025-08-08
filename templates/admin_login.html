@@ -9,19 +9,39 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
         :root {
-            --primary: #4361ee;
+            --primary: #4a76ff;
+            --primary-dark: #3a65e9;
             --secondary: #3a0ca3;
             --success: #2ec4b6;
             --danger: #e71d36;
             --warning: #ff9f1c;
             --light: #f8f9fa;
             --dark: #212529;
+            --bg: #ffffff;
+            --card-bg: #ffffff;
+            --text: #212529;
+            --border: #dee2e6;
+        }
+
+        [data-theme="dark"] {
+            --bg: #1e2125;
+            --text: #f8f9fa;
+            --border: #343a40;
+            --card-bg: #2d3135;
+            --primary: #4a76ff;
+            --primary-dark: #3a65e9;
         }
         
         .card {
             border-radius: 10px;
             border: none;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: var(--card-bg);
+            color: var(--text);
+        }
+
+        [data-theme="dark"] .card {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
         
         .stat-card {
@@ -50,7 +70,7 @@
         }
         
         .admin-content {
-            background-color: #f0f2f5;
+            background-color: var(--bg);
             min-height: 100vh;
         }
         
@@ -65,17 +85,23 @@
     </style>
 </head>
 <body>
-    <div id="admin-login" class="d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div id="theme-toggle-container" style="position: absolute; top: 20px; right: 20px;">
+        <button id="theme-toggle" class="theme-toggle btn btn-sm">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+
+    <div id="admin-login" class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background-color: var(--bg); color: var(--text);">
         <div class="card p-4" style="width: 400px;">
             <h3 class="mb-4">管理员登录</h3>
             <div class="mb-3">
-                <label class="form-label">用户名</label>
-                <input type="text" class="form-control" id="admin-username" value="admin">
-            </div>
+            <label class="form-label">用户名</label>
+            <input type="text" class="form-control" id="admin-username" value="admin" style="background-color: var(--card-bg); color: var(--text); border-color: var(--border);">
+        </div>
             <div class="mb-3">
-                <label class="form-label">密码</label>
-                <input type="password" class="form-control" id="admin-password" value="">
-            </div>
+            <label class="form-label">密码</label>
+            <input type="password" class="form-control" id="admin-password" value="" style="background-color: var(--card-bg); color: var(--text); border-color: var(--border);">
+        </div>
             <button class="btn btn-primary w-100" id="admin-login-btn">登录</button>
             <a href="/index" class="btn btn-home w-100">
                 <i class="bi bi-house-door me-2"></i>返回主页
@@ -86,6 +112,40 @@
     </div>
 
     <script>
+        // 深色模式切换功能
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = themeToggle.querySelector('i');
+
+        // 检查本地存储或系统偏好
+        const savedTheme = localStorage.getItem('theme') || 
+                        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+
+        // 初始化主题
+        if (savedTheme === 'dark') {
+            document.documentElement.dataset.theme = 'dark';
+            themeIcon.className = 'bi bi-sun';
+            themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+        } else {
+            document.documentElement.dataset.theme = 'light';
+            themeIcon.className = 'bi bi-moon';
+            themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+        }
+
+        // 切换主题
+        themeToggle.addEventListener('click', function() {
+            if (document.documentElement.dataset.theme === 'dark') {
+                document.documentElement.dataset.theme = 'light';
+                localStorage.setItem('theme', 'light');
+                themeIcon.className = 'bi bi-moon';
+                themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+            } else {
+                document.documentElement.dataset.theme = 'dark';
+                localStorage.setItem('theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            }
+        });
+
         document.getElementById('admin-login-btn').addEventListener('click', function() {
             const username = document.getElementById('admin-username').value;
             const password = document.getElementById('admin-password').value;
@@ -95,10 +155,22 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                redirect: 'manual' // 手动处理重定向
             })
             .then(response => {
+                console.log('响应状态码:', response.status);
+                console.log('响应头:', Array.from(response.headers.entries()));
                 if (response.status === 200) return response.json();
+                if (response.status === 302) {
+                    // 处理重定向
+                    const redirectUrl = response.headers.get('Location');
+                    console.log('重定向URL:', redirectUrl);
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                        return Promise.reject('Redirecting...');
+                    }
+                }
                 throw new Error('登录失败');
             })
             .then(data => {

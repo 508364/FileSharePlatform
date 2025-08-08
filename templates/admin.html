@@ -46,7 +46,43 @@
             color: #333;
             line-height: 1.6;
         }
-        
+
+         /* 复选框容器 */
+        .form-check {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+    
+        /* 复选框标签 */
+        .form-check-label {
+            margin-left: 10px;
+            font-size: 16px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+    
+        /* 复选框本身 */
+        .form-check-input {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            cursor: pointer;
+            position: relative;
+            appearance: none;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+    
+        /* 复选框选中状态 */
+        .form-check-input:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
         /* 深色模式样式 */
         body.dark-mode {
             background-color: var(--dark-bg);
@@ -150,6 +186,52 @@
             color: var(--dark-text);
         }
         
+        /* 深色模式下的复选框 */
+        body.dark-mode .form-check-input {
+            border-color: var(--dark-border);
+        }
+    
+        body.dark-mode .form-check-input:checked {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+        
+        /* 悬停效果 */
+        .form-check-input:hover {
+            box-shadow: 0 0 0 4px rgba(67, 97, 238, 0.1);
+        }
+        
+        /* 禁用状态 */
+        .form-check-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 尺寸限制 */
+        .form-check-input.small {
+            width: 16px;
+            height: 16px;
+        }
+
+        .form-check-input.small:checked::after {
+            top: 1px;
+            left: 5px;
+            width: 4px;
+            height: 8px;
+        }
+
+        .form-check-input.large {
+            width: 24px;
+            height: 24px;
+        }
+
+        .form-check-input.large:checked::after {
+            top: 3px;
+            left: 7px;
+            width: 6px;
+            height: 12px;
+        }
+
         /* 头部样式 */
         .admin-header {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -712,6 +794,9 @@
             <button id="theme-toggle" class="theme-toggle">
                 <i class="bi bi-moon btn-sm"></i> 深色模式
             </button>
+            <button class="logout-btn" onclick="location.href='/error_management'">
+                <i class="bi bi-exclamation-triangle btn-sm"></i> 错误页面管理
+            </button>
             <button class="logout-btn" onclick="location.href='/admin/github_clone'">
                 <i class="bi bi-github btn-sm"></i> GitHub克隆下载
             </button>
@@ -860,30 +945,31 @@
         <section id="security" class="section-content">
             <div class="dashboard-card">
                 <h2><i class="bi bi-shield-lock"></i> 安全设置</h2>
-                <form method="POST" action="{{ url_for('admin_change_password') }}" class="password-form">
-                    <div class="form-group">
-                        <label for="current_password">当前密码</label>
-                        <input type="password" id="current_password" name="current_password" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="new_password">新密码</label>
-                        <input type="password" id="new_password" name="new_password" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="confirm_password">确认新密码</label>
-                        <input type="password" id="confirm_password" name="confirm_password" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <button type="submit" class="btn-save">
-                            <i class="bi bi-key"></i> 更改密码
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
+                <!-- 更改密码表单 -->
+            <form method="POST" action="{{ url_for('admin_change_password') }}" class="password-form">
+                <div class="form-group">
+                    <label for="current_password">当前密码</label>
+                    <input type="password" id="current_password" name="current_password" required class="form-control">
+                </div>
+            
+                <div class="form-group">
+                    <label for="new_password">新密码</label>
+                    <input type="password" id="new_password" name="new_password" required class="form-control">
+                </div>
+            
+                <div class="form-group">
+                    <label for="confirm_password">确认新密码</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required class="form-control">
+                </div>
+            
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-key"></i> 更改密码
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
         
         <!-- 网络配置部分 -->
         <section id="network" class="section-content">
@@ -969,7 +1055,7 @@
             </div>
         </section>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // 默认显示仪表盘

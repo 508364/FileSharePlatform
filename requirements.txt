@@ -7,4 +7,9 @@ python-dotenv==1.0.0
 Werkzeug==2.3.7
 Jinja2==3.1.2
 chardet==5.2.0
-requests
+requests>=2.32.4
+gevent==23.9.1
+pdfminer.six==20231228
+PyPDF2==3.0.1
+urllib3==2.0.7
+pycryptodome==3.19.0

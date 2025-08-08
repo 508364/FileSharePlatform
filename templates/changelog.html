@@ -19,7 +19,7 @@
             --code-bg: #f6f8fa;
         }
         
-        .dark-mode {
+        [data-theme="dark"] {
             --bg-color: #0d1117;
             --text-color: #c9d1d9;
             --border-color: #30363d;
@@ -377,22 +377,22 @@
             // 检查本地存储的主题设置
             const savedTheme = localStorage.getItem('changelogTheme');
             if (savedTheme === 'dark') {
-                htmlElement.classList.add('dark-mode');
+                htmlElement.dataset.theme = 'dark';
                 themeText.textContent = '浅色模式';
                 themeIcon.className = 'fas fa-sun';
             }
             
             themeToggle.addEventListener('click', function() {
-                htmlElement.classList.toggle('dark-mode');
-                
-                if (htmlElement.classList.contains('dark-mode')) {
-                    themeText.textContent = '浅色模式';
-                    themeIcon.className = 'fas fa-sun';
-                    localStorage.setItem('changelogTheme', 'dark');
-                } else {
+                if (htmlElement.dataset.theme === 'dark') {
+                    htmlElement.dataset.theme = 'light';
                     themeText.textContent = '深色模式';
                     themeIcon.className = 'fas fa-moon';
                     localStorage.setItem('changelogTheme', 'light');
+                } else {
+                    htmlElement.dataset.theme = 'dark';
+                    themeText.textContent = '浅色模式';
+                    themeIcon.className = 'fas fa-sun';
+                    localStorage.setItem('changelogTheme', 'dark');
                 }
             });
             

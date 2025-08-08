@@ -1,0 +1,189 @@
+<html lang="zh-CN">
+<head>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/main.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Internal Server Error</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #2ec4b6;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --text-color: #333;
+            --bg-color: #f5f7fb;
+            --card-bg: #ffffff;
+            --header-bg: linear-gradient(135deg, var(--primary), var(--secondary));
+            --border-color: #dee2e6;
+            --input-bg: #ffffff;
+            --text-muted: #6c757d;
+        }
+        
+        [data-theme="dark"] {
+            --primary: #5a76ff;
+            --secondary: #4a5ad4;
+            --success: #2ec4b6;
+            --light: #1a1c23;
+            --dark: #f8f9fa;
+            --text-color: #e0e0e0;
+            --bg-color: #121418;
+            --card-bg: #1e2229;
+            --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
+            --border-color: #2d333b;
+            --input-bg: #252b33;
+            --text-muted: #a0a8b0;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .error-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+        }
+        
+        .error-code {
+            font-size: 10rem;
+            font-weight: bold;
+            color: var(--primary);
+            opacity: 0.2;
+            line-height: 1;
+        }
+        
+        .error-message {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-top: -20px;
+            margin-bottom: 20px;
+        }
+        
+        .error-description {
+            text-align: center;
+            max-width: 500px;
+            margin-bottom: 30px;
+            color: var(--text-muted);
+        }
+        
+        .navbar {
+            background: var(--header-bg) !important;
+        }
+        
+        .theme-switch-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+        }
+        
+        #theme-toggle {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/index">
+                <i class="bi bi-cloud-arrow-up-fill me-2"></i>
+                文件共享平台
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/index">返回首页</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="error-container">
+        <div class="error-code">500</div>
+        <div class="error-message">内部服务器错误 (Internal Server Error)</div>
+        <div class="error-description">
+            <p>抱歉，服务器遇到了内部错误。请稍后再试，或联系管理员报告此问题。</p>
+            <p>Sorry, the server encountered an internal error. Please try again later or contact the administrator to report this issue.</p>
+        </div>
+        <a href="/index" class="btn btn-primary px-5 py-2"><i class="bi bi-arrow-left me-2"></i>返回首页</a>
+    </div>
+
+    <footer>
+        <p>© 2025 508364.All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 深色模式切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = themeToggle.querySelector('i');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'bi bi-sun';
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeIcon.className = 'bi bi-moon';
+                themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.className = 'bi bi-moon';
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.className = 'bi bi-sun';
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                }
+            });
+        });
+    </script>
+    <div class="theme-switch-container">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+</body>
+</html>
