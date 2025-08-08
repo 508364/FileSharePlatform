@@ -1,0 +1,118 @@
+# 工作流名称：多平台自动构建与发布
+name: Multi-Platform Build and Release
+
+# 触发条件：推送到main分支、PR到main分支或手动触发
+on:
+    push:
+      branches: [ main ]
+    pull_request:
+      branches: [ main ]
+    workflow_dispatch:
+
+jobs:
+  get_version:
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Read version from server.py
+      id: get_version
+      run: |
+        import re
+        with open('server.py', 'r', encoding='utf-8') as f:
+            content = f.read()
+        version = re.search(r"'app_version': '(.*?)'", content).group(1)
+        print(f"::set-output name=VERSION::{version}")
+      shell: python
+  
+  build:
+    needs: get_version
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pyinstaller pytest
+      shell: bash
+    
+    - name: Run tests
+      run: pytest
+      continue-on-error: false
+    
+    - name: Build with PyInstaller (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        pyinstaller --onefile \
+                    --name FileSharePlatform-linux-v${{ needs.get_version.outputs.VERSION }} \
+                    --add-data 'templates:templates' \
+                    --add-data 'static:static' \
+                    server.py
+    
+    - name: Build with PyInstaller (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        pyinstaller --onefile `
+                    --name FileSharePlatform-windows-v${{ needs.get_version.outputs.VERSION }} `
+                    --add-data 'templates;templates' `
+                    --add-data 'static;static' `
+                    server.py
+      shell: powershell
+    
+    - name: Build with PyInstaller (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        pyinstaller --onefile \
+                    --name FileSharePlatform-macos-v${{ needs.get_version.outputs.VERSION }} \
+                    --add-data 'templates:templates' \
+                    --add-data 'static:static' \
+                    server.py
+    
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}-build-py${{ matrix.python-version }}
+        path: |
+          dist/FileSharePlatform-*
+          !dist/*dSYM
+    
+  release:
+    needs: [build, get_version]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set version from get_version job
+      run: |
+        echo "VERSION=${{ needs.get_version.outputs.VERSION }}" >> $GITHUB_ENV
+      shell: bash
+    
+    - name: Download all build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Release v${{ needs.get_version.outputs.VERSION }}
+        tag_name: v${{ needs.get_version.outputs.VERSION }}
+        files: dist/**/FileSharePlatform-*
+        generate_release_notes: true
+        draft: false
+        prerelease: false
