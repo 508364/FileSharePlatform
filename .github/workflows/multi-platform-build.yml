@@ -98,11 +98,14 @@ jobs:
       continue-on-error: true
     
     - name: Build with PyInstaller
+      timeout-minutes: 60
       run: |
-        # 根据不同平台设置路径分隔符
+        # 根据不同平台设置路径分隔符和优化参数
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
           separator=";"
           os_suffix="windows"
+          # Windows平台优化参数
+          optimization_flags="--log-level=WARN --noupx"
         else
           separator=":"
           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
@@ -110,6 +113,7 @@ jobs:
           else
             os_suffix="macos"
           fi
+          optimization_flags="--log-level=INFO"
         fi
         
         # 构建命令
@@ -120,6 +124,7 @@ jobs:
                     --icon=favicon.ico \
                     --clean \
                     --windowed \
+                    $optimization_flags \
                     server.py
       shell: bash
     
@@ -127,8 +132,12 @@ jobs:
     - name: Windows specific fixes
       if: matrix.os == 'windows-latest'
       run: |
-        # 确保生成的exe文件可执行
-        chmod +x dist/${{ env.PROJECT_NAME }}-windows-v${{ needs.get_version.outputs.VERSION }}.exe
+        # Windows不需要chmod，通过扩展名识别可执行文件
+        # 输出构建详情以便调试
+        echo "Windows build details:" 
+        echo "- Output directory: dist/"
+        echo "- Built file: ${{ env.PROJECT_NAME }}-windows-v${{ needs.get_version.outputs.VERSION }}.exe"
+        ls -la dist/
       shell: bash
     
     - name: List build output
