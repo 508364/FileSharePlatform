@@ -1248,6 +1248,7 @@ def upload():
         # 处理重名文件
         counter = 1
         name, ext = os.path.splitext(filename)
+        new_name = filename  # 初始化new_name变量
         while os.path.exists(save_path):
             new_name = f"{name}_{counter}{ext}"
             save_path = os.path.join(system_config['upload_folder'], new_name)
