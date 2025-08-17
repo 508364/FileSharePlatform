@@ -204,6 +204,14 @@
           --border-color: #2d333b;
           --input-bg: #252b33;
           --text-muted: #a0a8b0;
+          --primary: #5a76ff;
+          --secondary: #4a5ad4;
+          --success: #2ec4b6;
+          --stat-card-bg: #252b33;
+          --filter-btn-active: #5a76ff;
+          --project-icon-bg: #2d333b;
+          --license-badge-bg: rgba(90, 118, 255, 0.1);
+          --footer-bg: #1a1c23;
         }
         
         /* 通用深色模式覆盖 */
@@ -247,6 +255,92 @@
         
         [data-theme="dark"] #theme-toggle {
           background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 深色模式下的组件样式 */
+        [data-theme="dark"] .header {
+          background: var(--header-bg);
+        }
+        
+        [data-theme="dark"] .card {
+          background-color: var(--card-bg);
+          border-color: var(--border-color);
+          color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .card:hover {
+          box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+        }
+        
+        [data-theme="dark"] .card-header {
+          background-color: var(--card-bg);
+          border-color: var(--border-color);
+          color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .stat-card {
+          background: var(--card-bg);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+        
+        [data-theme="dark"] .stat-number {
+          color: var(--primary-light);
+        }
+        
+        [data-theme="dark"] .filter-btn {
+          color: var(--text-color);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .filter-btn.active, 
+        [data-theme="dark"] .filter-btn:hover {
+          background: var(--primary-light);
+          color: white;
+          border-color: var(--primary-light);
+        }
+        
+        [data-theme="dark"] .project-icon {
+          background: var(--header-bg);
+        }
+        
+        [data-theme="dark"] .project-link {
+          color: var(--primary-light);
+        }
+        
+        [data-theme="dark"] .project-link:hover {
+          color: var(--primary-dark);
+        }
+        
+        [data-theme="dark"] .footer {
+          background-color: var(--dark);
+          color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .btn-light {
+          background-color: var(--card-bg);
+          color: var(--text-color);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .btn-light:hover {
+          background-color: var(--input-bg);
+        }
+        
+        [data-theme="dark"] .table {
+          color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .table thead {
+          background-color: var(--card-bg);
+        }
+        
+        [data-theme="dark"] .table th,
+        [data-theme="dark"] .table td {
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .badge {
+          color: var(--text-color) !important;
         }
     </style>
 </head>
@@ -303,7 +397,7 @@
             <div class="col-md-4 mb-4">
                 <div class="stat-card">
                     <i class="bi bi-github" style="font-size: 2rem; color: var(--primary);"></i>
-                    <div class="stat-number">14</div>
+                    <div class="stat-number">17</div>
                     <div class="stat-label">使用的开源项目</div>
                 </div>
             </div>
@@ -631,6 +725,68 @@
                 </div>
             </div>
 
+            <!-- pdfminer.six -->
+            <div class="col-lg-4 col-md-6" data-category="util">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <h3 class="card-title">pdfminer.six</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">PDF解析库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v20231228</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">pdfminer.six是一个用于从PDF文档中提取信息的Python库，支持文本提取和布局分析。</p>
+                        <a href="https://github.com/pdfminer/pdfminer.six" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PyPDF -->
+            <div class="col-lg-4 col-md-6" data-category="util">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </div>
+                        <h3 class="card-title">PyPDF</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">PDF处理库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v6.0.0</span>
+                        </div>
+                        <p><span class="license-badge license-bsd">BSD许可证</span></p>
+                        <p class="card-text">PyPDF是一个纯Python库，用于处理PDF文件，支持合并、分割、加密和解密PDF文档。</p>
+                        <a href="https://github.com/py-pdf/pypdf" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- urllib3 -->
+            <div class="col-lg-4 col-md-6" data-category="net">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="project-icon">
+                            <i class="bi bi-globe"></i>
+                        </div>
+                        <h3 class="card-title">urllib3</h3>
+                        <div class="d-flex justify-content-between items-center mb-2">
+                            <span class="text-muted">HTTP客户端库</span>
+                            <span class="badge bg-primary bg-opacity-10 text-primary">v2.0.7</span>
+                        </div>
+                        <p><span class="license-badge license-mit">MIT许可证</span></p>
+                        <p class="card-text">urllib3是一个功能强大且用户友好的HTTP客户端库，为Python提供了安全的连接池和文件后端。</p>
+                        <a href="https://urllib3.readthedocs.io/" target="_blank" class="project-link">
+                            项目官网 <i class="bi bi-box-arrow-up-right ms-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 

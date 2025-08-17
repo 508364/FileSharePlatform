@@ -311,8 +311,10 @@
         fetch('/api/system/config')
             .then(res => res.json())
             .then(config => {
-                document.title = config.web_ui.title || '文件共享平台';
-                document.querySelector('.navbar-brand').innerText = config.web_ui.brand;
+                if (config.web_ui) {
+                    document.title = config.web_ui.title || '文件共享平台';
+                    document.querySelector('.navbar-brand').innerText = config.web_ui.brand;
+                }
                 document.getElementById('max-file-size').innerText = `最大${formatBytes(config.max_file_size)}`;
             });
 
@@ -572,7 +574,7 @@ function getFileType(filename) {
         
         // 其他
         exe: 'filetype', dll: 'executable', apk: 'android', 
-        iso: 'disk_image', dmg: 'disk_image'
+        iso: 'disk_image', dmg: 'disk_image', aktp: 'aktp'
     };
     
     return types[extension] || 'unknown';
@@ -591,6 +593,7 @@ function getFileIcon(fileType) {
         android: 'bi bi-android2',
         executable: 'bi-file-earmark-binary',
         disk_image: 'bi-file-earmark-break',
+        aktp: 'bi-file-earmark-lock',
         unknown: 'bi-file-earmark'
     };
     

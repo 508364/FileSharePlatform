@@ -283,30 +283,30 @@
                     webp: 'image', svg: 'image', tiff: 'image',
                     
                     // 文档类型
-                    pdf: 'document', doc: 'document', docx: 'document', xls: 'document', 
-                    xlsx: 'document', ppt: 'document', pptx: 'document', txt: 'document',
-                    rtf: 'document', odt: 'document', ods: 'document', odp: 'document',
-                    
-                    // 压缩文件
-                    zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', 
-                    gz: 'archive', bz2: 'archive',
-                    
-                    // 音频文件
-                    mp3: 'audio', wav: 'audio', ogg: 'audio', flac: 'audio', aac: 'audio',
-                    
-                    // 视频文件
-                    mp4: 'video', mov: 'video', avi: 'video', mkv: 'video', wmv: 'video',
-                    flv: 'video', webm: 'video',
-                    
-                    // 代码文件
-                    js: 'code', html: 'code', css: 'code', py: 'code', java: 'code', 
-                    cpp: 'code', c: 'code', cs: 'code', php: 'code', json: 'code', 
-                    xml: 'code', sql: 'code',
-                    
-                    // 其他
-                    exe: 'filetype', dll: 'executable', apk: 'android', 
-                    iso: 'disk_image', dmg: 'disk_image'
-                };
+        pdf: 'document', doc: 'document', docx: 'document', xls: 'document', 
+        xlsx: 'document', ppt: 'document', pptx: 'document', txt: 'document',
+        rtf: 'document', odt: 'document', ods: 'document', odp: 'document',
+        
+        // 压缩文件
+        zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', 
+        gz: 'archive', bz2: 'archive',
+        
+        // 音频文件
+        mp3: 'audio', wav: 'audio', ogg: 'audio', flac: 'audio', aac: 'audio',
+        
+        // 视频文件
+        mp4: 'video', mov: 'video', avi: 'video', mkv: 'video', wmv: 'video',
+        flv: 'video', webm: 'video',
+        
+        // 代码文件
+        js: 'code', html: 'code', css: 'code', py: 'code', java: 'code', 
+        cpp: 'code', c: 'code', cs: 'code', php: 'code', json: 'code', 
+        xml: 'code', sql: 'code',
+        
+        // 其他
+        exe: 'filetype', dll: 'executable', apk: 'android', 
+        iso: 'disk_image', dmg: 'disk_image', aktp: 'aktp'
+    };
                 
                 return types[extension] || 'unknown';
             }
@@ -315,17 +315,18 @@
             function getFileIcon(fileType) {
                 const icons = {
                     image: 'bi-file-image',
-                    document: 'bi-file-earmark-text',
-                    archive: 'bi-file-earmark-zip',
-                    audio: 'bi-file-earmark-music',
-                    video: 'bi-file-earmark-play',
-                    code: 'bi-file-earmark-code',
-                    filetype: 'bi bi-filetype-exe',
-                    android: 'bi bi-android2',
-                    executable: 'bi-file-earmark-binary',
-                    disk_image: 'bi-file-earmark-break',
-                    unknown: 'bi-file-earmark'
-                };
+        document: 'bi-file-earmark-text',
+        archive: 'bi-file-earmark-zip',
+        audio: 'bi-file-earmark-music',
+        video: 'bi-file-earmark-play',
+        code: 'bi-file-earmark-code',
+        filetype: 'bi bi-filetype-exe',
+        android: 'bi bi-android2',
+        executable: 'bi-file-earmark-binary',
+        disk_image: 'bi-file-earmark-break',
+        aktp: 'bi-filetype-json',
+        unknown: 'bi-file-earmark'
+    };
                 
                 return icons[fileType] || 'bi-file-earmark';
             }

@@ -14,18 +14,62 @@
             --light: #f8f9fc;
             --dark: #212529;
             --gray: #6c757d;
+            --preview-bg: #f8f9fa;
+            --text-color: #333;
+            --border-color: #dee2e6;
+            --card-bg: #ffffff;
+            --bg-color: #f5f7fb;
+        }
+        
+
+        
+        [data-theme="dark"] {
+            --primary: #5a76ff;
+            --primary-dark: #4a5ad4;
+            --light: #1a1c23;
+            --dark: #f8f9fa;
+            --gray: #a0a8b0;
+            --preview-bg: #252b33;
+            --text-color: #e0e0e0;
+            --border-color: #2d333b;
+            --card-bg: #1e2229;
+            --bg-color: #121418;
         }
         
         body {
-            background-color: #f5f7fb;
-            color: #333;
+            background-color: var(--bg-color, #f5f7fb);
+            color: var(--text-color, #333);
             font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
         }
         
+        .audio-player {
+            width: 100%;
+            max-width: 100%;
+            background: var(--preview-bg);
+            border-radius: 5px;
+            padding: 10px;
+            box-sizing: border-box;
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] .audio-player {
+            background: var(--preview-bg);
+            color: var(--text-color);
+        }
+        
+        .video-player {
+            width: 100%;
+            max-height: 80vh;
+            border-radius: 5px;
+            background: black;
+            /* 添加自适应样式 */
+            height: auto;
+        }
+
         .file-detail-container {
             max-width: 1200px;
             margin: 30px auto;
-            background: white;
+            background: var(--card-bg);
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
@@ -61,7 +105,7 @@
         }
         
         .preview-container {
-            background-color: #f8f9fa;
+            background-color: var(--preview-bg);
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 25px;
@@ -83,341 +127,172 @@
             max-height: 80vh;
             border-radius: 5px;
             background: black;
+            /* 添加自适应样式 */
+            height: auto;
+            object-fit: contain;
         }
         
         .pdf-viewer {
             width: 100%;
-            height: 80vh;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
+            min-height: 500px;
         }
         
-        .text-content {
-            font-family: monospace;
-            white-space: pre-wrap;
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 5px;
-            max-height: 70vh;
-            overflow: auto;
-            width: 100%;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .btn-download {
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-download:hover {
-            background: var(--primary-dark);
-            color: white;
-        }
-        
-        .file-meta {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        
-        .meta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .meta-item {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .meta-label {
-            font-size: 13px;
-            color: var(--gray);
-        }
-        
-        .meta-value {
-            font-weight: 500;
-            margin-top: 5px;
-        }
-        
-        .unsupported-container {
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .unsupported-icon {
-            font-size: 64px;
-            color: #dee2e6;
-            margin-bottom: 20px;
-        }
-
-        .pdf-viewer {
-            width: 100%;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 15px;
-            background: #f8f9fa;
-        }
-
         .pdf-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .page-info {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .pdf-pages-container {
-            max-width: 100%;
-            overflow-x: auto;
             text-align: center;
-        }
-
-        .pdf-pages-container canvas {
-            max-width: 100%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin: 0 auto;
-        }
-
-        /* 深色模式变量 */
-        :root {
-            --primary: #4361ee;
-            --primary-dark: #3a0ca3;
-            --light: #f8f9fc;
-            --dark: #212529;
-            --gray: #6c757d;
-            --text-color: #333;
-            --bg-color: #f5f7fb;
-            --card-bg: #ffffff;
-            --header-bg: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            --border-color: #dee2e6;
-            --input-bg: #ffffff;
-            --text-muted: #6c757d;
-            --preview-bg: #f8f9fa;
-            --meta-bg: #f8f9fa;
-        }
-        
-        [data-theme="dark"] {
-            --primary: #5a76ff;
-            --primary-dark: #4a5ad4;
-            --light: #1a1c23;
-            --dark: #f8f9fa;
-            --gray: #a0a8b0;
-            --text-color: #e0e0e0;
-            --bg-color: #121418;
-            --card-bg: #1e2229;
-            --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
-            --border-color: #2d333b;
-            --input-bg: #252b33;
-            --text-muted: #a0a8b0;
-            --preview-bg: #1e2229;
-            --meta-bg: #252b33;
-        }
-        
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            transition: background-color 0.3s, color 0.3s;
-        }
-        
-        .file-detail-container {
-            max-width: 1200px;
-            margin: 30px auto;
-            background: var(--card-bg);
-            border-radius: 10px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            transition: background-color 0.3s;
-        }
-        
-        .file-header {
-            background: var(--header-bg);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .file-title {
-            font-size: 24px;
-            font-weight: 500;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .file-info {
-            display: flex;
-            gap: 20px;
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .file-content {
-            padding: 25px;
-        }
-        
-        .preview-container {
-            background-color: var(--preview-bg);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 25px;
-            min-height: 500px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background-color 0.3s;
-        }
-        
-        .image-preview {
-            max-width: 100%;
-            max-height: 80vh;
-            border-radius: 5px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-        
-        .video-player {
-            width: 100%;
-            max-height: 80vh;
-            border-radius: 5px;
-            background: black;
-        }
-        
-        .pdf-viewer {
-            width: 100%;
-            height: 80vh;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            transition: border-color 0.3s;
-        }
-        
-        .text-content {
-            font-family: monospace;
-            white-space: pre-wrap;
-            background-color: var(--preview-bg);
-            padding: 20px;
-            border-radius: 5px;
-            max-height: 70vh;
-            overflow: auto;
-            width: 100%;
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .btn-download {
-            background: var(--primary);
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
-        }
-        
-        .btn-download:hover {
-            background: var(--primary-dark);
-            color: white;
-        }
-        
-        .file-meta {
-            background: var(--meta-bg);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 20px;
-            transition: background-color 0.3s;
-        }
-        
-        .meta-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .meta-item {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .meta-label {
-            font-size: 13px;
-            color: var(--text-muted);
-            transition: color 0.3s;
-        }
-        
-        .meta-value {
-            font-weight: 500;
-            margin-top: 5px;
-            color: var(--text-color);
-            transition: color 0.3s;
-        }
-        
-        .unsupported-container {
-            text-align: center;
-            padding: 40px;
-        }
-        
-        .unsupported-icon {
-            font-size: 64px;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-            transition: color 0.3s;
-        }
-
-        .pdf-viewer {
-            width: 100%;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
             padding: 15px;
             background: var(--preview-bg);
-            transition: background-color 0.3s, border-color 0.3s;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
-
-        .pdf-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 15px;
+        
+        .pdf-info {
+            margin-bottom: 20px;
         }
-
-        .page-info {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--text-color);
-            transition: color 0.3s;
-        }
-
+        
         .pdf-pages-container {
-            max-width: 100%;
-            overflow-x: auto;
             text-align: center;
         }
-
-        .pdf-pages-container canvas {
+        
+        .pdf-page {
             max-width: 100%;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin: 0 auto;
+            width: 100%;
+            margin: 0 auto 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            background: white;
+            display: none; /* 默认隐藏 */
+        }
+        
+        [data-theme="dark"] .pdf-page {
+            background: var(--card-bg);
+        }
+        
+        /* 错误信息容器 */
+        .alert-warning[data-page] {
+            display: none; /* 默认隐藏 */
+            max-width: 100%;
+            margin: 0 auto 20px;
+            text-align: center;
+        }
+        
+        /* 显示当前页面 */
+        .pdf-page[data-page]:not([data-page="1"]) {
+            display: none;
+        }
+        
+        .pdf-page[data-page="1"] {
+            display: block;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .file-detail-container {
+                margin: 10px;
+                border-radius: 5px;
+            }
+            
+            .file-header {
+                padding: 15px;
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .file-title {
+                font-size: 20px;
+                gap: 10px;
+            }
+            
+            .file-info {
+                gap: 10px;
+                font-size: 12px;
+            }
+            
+            .file-content {
+                padding: 15px;
+            }
+            
+            .preview-container {
+                padding: 10px;
+                min-height: 300px;
+            }
+            
+            .pdf-page {
+                max-width: 100vw;
+                margin: 0 0 15px 0;
+            }
+            
+            .pdf-controls {
+                padding: 10px;
+            }
+            
+            .pdf-controls .btn {
+                padding: 5px 10px;
+                font-size: 14px;
+            }
+            
+            .page-info {
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .file-header {
+                padding: 10px;
+            }
+            
+            .file-title {
+                font-size: 18px;
+            }
+            
+            .file-info {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .action-buttons .btn {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+            
+            .pdf-controls .btn {
+                padding: 4px 8px;
+                font-size: 12px;
+            }
+            
+            .page-info {
+                font-size: 12px;
+            }
+        }
+        
+        .unsupported-container {
+            text-align: center;
+            padding: 40px 20px;
+            background: var(--preview-bg);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .unsupported-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+        }
+        
+        .text-content {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: var(--preview-bg);
+            padding: 20px;
+            border-radius: 5px;
+            max-height: 70vh;
+            overflow: auto;
+            width: 100%;
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            /* 添加自适应样式 */
+            height: auto;
         }
         
         .theme-switch-container {
@@ -447,7 +322,7 @@
         <div class="file-header">
             <div>
                 <h1 class="file-title">
-                    <i class="bi bi-file-earmark"></i>
+                    <i class="bi bi-file-earmark" id="file-icon"></i>
                     <span id="file-name">文件详情</span>
                 </h1>
                 <div class="file-info">
@@ -456,7 +331,7 @@
                 </div>
             </div>
             <div class="action-buttons">
-                <a href="#" id="download-btn" class="btn btn-download">
+                <a href="#" id="download-btn" class="btn btn-light">
                     <i class="bi bi-download"></i> 下载文件
                 </a>
                 <a href="javascript:history.back()" class="btn btn-outline-light">
@@ -552,6 +427,10 @@
                     
                     // 根据文件类型渲染预览
                     renderPreview(filename, fileInfo);
+                    
+                    // 设置文件图标
+                    const ext = filename.split('.').pop().toLowerCase();
+                    setFileIcon(ext);
                 })
                 .catch(error => {
                     console.error('获取文件信息失败:', error);
@@ -582,19 +461,14 @@
                 document.getElementById('file-type').textContent = ext.toUpperCase();
                 document.getElementById('file-type-full').textContent = getFileTypeDescription(ext);
                 
+                // 设置文件图标
+                setFileIcon(ext);
+                
                 // 根据文件类型渲染预览
                 if (isImage(ext)) {
                     container.innerHTML = `
-                        <img src="/download/${encodeURIComponent(filename)}" 
-                             class="image-preview" alt="${filename}">
-                    `;
-                } 
-                else if (isVideo(ext)) {
-                    container.innerHTML = `
-                        <video controls class="video-player">
-                            <source src="/download/${encodeURIComponent(filename)}" type="video/${ext === 'mp4' ? 'mp4' : ext}">
-                            您的浏览器不支持视频播放
-                        </video>
+                        <img src="/preview/${encodeURIComponent(filename)}" 
+                             class="image-preview" alt="${filename}" onload="adjustImageSize(this)">
                     `;
                 } 
                 else if (ext === 'pdf') {
@@ -605,9 +479,35 @@
                     // 使用PDF.js渲染PDF
                     renderPDF(filename);
                 } 
+                else if (isVideo(ext)) {
+                    container.innerHTML = `
+                        <video controls class="video-player">
+                            <source src="/preview/${encodeURIComponent(filename)}" type="video/${ext === 'mp4' ? 'mp4' : ext}">
+                            您的浏览器不支持视频播放
+                        </video>
+                    `;
+                } 
+                else if (isAudio(ext)) {
+                    // 添加音频播放器
+                    let mimeType = 'audio/' + ext;
+                    if (ext === 'mp3') {
+                        mimeType = 'audio/mpeg';
+                    } else if (ext === 'wav') {
+                        mimeType = 'audio/wav';
+                    } else if (ext === 'ogg') {
+                        mimeType = 'audio/ogg';
+                    }
+                    
+                    container.innerHTML = `
+                        <audio controls class="audio-player">
+                            <source src="/preview/${encodeURIComponent(filename)}" type="${mimeType}">
+                            您的浏览器不支持音频播放
+                        </audio>
+                    `;
+                } 
                 else if (isTextFile(ext)) {
                     // 获取文本内容（添加编码处理）
-                fetch(`/download/${encodeURIComponent(filename)}`)
+                fetch(`/preview/${encodeURIComponent(filename)}`)
                     .then(response => {
                     const reader = response.body.getReader();
                         return new ReadableStream({
@@ -741,37 +641,19 @@
         .catch(error => {
             container.innerHTML = `
                 <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle"></i> 加载文本内容失败: ${error.message}
-                    <p class="mt-2">请尝试<a href="/download/${encodeURIComponent(filename)}" download>下载文件</a>后用文本编辑器打开</p>
-                </div>
-            `;
-        });
-}
-                else if (isAudio(ext)) {
-                    // 添加音频播放器
-                    let mimeType = 'audio/' + ext;
-                    if (ext === 'mp3') {
-                        mimeType = 'audio/mpeg';
-                    } else if (ext === 'wav') {
-                        mimeType = 'audio/wav';
-                    } else if (ext === 'ogg') {
-                        mimeType = 'audio/ogg';
-                    }
-                    
-                    container.innerHTML = `
-                        <audio controls class="audio-player" style="width: 100%;">
-                            <source src="/download/${encodeURIComponent(filename)}" type="${mimeType}">
-                            您的浏览器不支持音频播放
-                        </audio>
+                            <i class="bi bi-exclamation-triangle"></i> 加载文本内容失败: ${error.message}
+                            <p class="mt-2">请尝试<a href="/preview/${encodeURIComponent(filename)}" download>下载文件</a>后用文本编辑器打开</p>
+                        </div>
                     `;
-                }
+                });
+}
                 else {
                     container.innerHTML = `
                         <div class="unsupported-container">
                             <i class="bi bi-file-earmark-x unsupported-icon"></i>
                             <h4>不支持在线预览</h4>
                             <p class="text-muted">此文件类型不支持在线预览，请下载后查看</p>
-                            <a href="/download/${encodeURIComponent(filename)}" class="btn btn-primary mt-3">
+                            <a href="/preview/${encodeURIComponent(filename)}" class="btn btn-primary mt-3">
                                 <i class="bi bi-download"></i> 下载文件
                             </a>
                         </div>
@@ -781,8 +663,14 @@
             
             // 渲染PDF
             function renderPDF(filename) {
+                // 配置PDF.js worker
+                pdfjsLib.GlobalWorkerOptions.workerSrc = '/api/pdfjs/pdf.worker.min.js';
+                
                 const container = document.getElementById('preview-container');
-                const pdfUrl = `/download/${encodeURIComponent(filename)}`;
+                const encodedFilename = encodeURIComponent(filename);
+                const pdfUrl = `/preview/${encodedFilename}`;
+                
+                console.log('开始加载PDF:', pdfUrl);
                 
                 // 设置加载状态
                 container.innerHTML = `
@@ -794,16 +682,47 @@
                     </div>
                 `;
                 
-                // 创建PDF文档
+                // 初始化loadingTask
                 const loadingTask = pdfjsLib.getDocument({
                     url: pdfUrl,
                     withCredentials: false,
                     cMapUrl: '/api/cmaps/',
-                    cMapPacked: true
+                    cMapPacked: true,
+                    disableAutoFetch: false,  // 允许自动获取
+                    disableStream: false      // 允许流式加载
                 });
             
+                // 获取PDF信息
+                fetch(`/api/pdf_info?filename=${encodedFilename}`)
+                    .then(response => {
+                        console.log('PDF信息响应状态:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('PDF信息:', data);
+                        if (data.status === 'success') {
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'pdf-info mb-3';
+                            infoDiv.innerHTML = `
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">PDF信息</h5>
+                                        <p class="card-text">页数: ${data.pages}</p>
+                                        <p class="card-text">标题: ${data.metadata.title || '无'}</p>
+                                        <p class="card-text">作者: ${data.metadata.author || '无'}</p>
+                                    </div>
+                                </div>
+                            `;
+                            container.appendChild(infoDiv);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('获取PDF信息失败:', error);
+                    });
+            
+                // 处理PDF渲染
                 loadingTask.promise.then(pdf => {
-                    // 清除容器
+                    console.log('PDF加载成功，页数:', pdf.numPages);
                     container.innerHTML = '<div id="pdf-viewer" class="pdf-viewer"></div>';
                     const pdfViewer = document.getElementById('pdf-viewer');
                     
@@ -829,252 +748,418 @@
                     canvasContainer.className = 'pdf-pages-container';
                     pdfViewer.appendChild(canvasContainer);
                     
-                    // 渲染第一页
-                    let currentPage = 1;
-                    renderPage(pdf, currentPage, canvasContainer);
+                    // 渲染所有页面
+                    for (let i = 1; i <= totalPages; i++) {
+                        renderPage(pdf, i, canvasContainer);
+                    }
                     
-                    // 添加分页事件
-                    document.querySelector('.prev-page').addEventListener('click', () => {
-                        if (currentPage > 1) {
-                            currentPage--;
-                            renderPage(pdf, currentPage, canvasContainer);
-                            document.getElementById('current-page').textContent = currentPage;
-                        }
-                    });
+                    // 在底部添加分页控制
+                    const bottomPageControls = document.createElement('div');
+                    bottomPageControls.className = 'pdf-controls mt-3';
+                    bottomPageControls.innerHTML = `
+                        <button class="btn btn-sm btn-outline-primary prev-page-bottom">
+                            <i class="bi bi-arrow-left"></i> 上一页
+                        </button>
+                        <span class="page-info mx-2">第 <span id="current-page-bottom">1</span> 页 / 共 <span id="total-pages-bottom">${totalPages}</span> 页</span>
+                        <button class="btn btn-sm btn-outline-primary next-page-bottom">
+                            下一页 <i class="bi bi-arrow-right"></i>
+                        </button>
+                    `;
+                    pdfViewer.appendChild(bottomPageControls);
                     
-                    document.querySelector('.next-page').addEventListener('click', () => {
-                        if (currentPage < totalPages) {
-                            currentPage++;
-                            renderPage(pdf, currentPage, canvasContainer);
+                    // 等待所有页面渲染完成后再显示第一页并绑定事件
+                    setTimeout(() => {
+                        // 显示第一页
+                        const firstPageElements = canvasContainer.querySelectorAll('[data-page="1"]');
+                        firstPageElements.forEach(el => {
+                            // 对于canvas元素，使用style.display
+                            // 对于div元素(错误信息)，也使用style.display
+                            el.style.display = 'block';
+                        });
+                        
+                        // 更新分页控制事件
+                        let currentPage = 1;
+                        
+                        // 更新顶部和底部页码显示
+                        function updatePageInfo() {
                             document.getElementById('current-page').textContent = currentPage;
+                            document.getElementById('current-page-bottom').textContent = currentPage;
                         }
-                    });
+                        
+                        // 上一页按钮事件（顶部）
+                        document.querySelector('.prev-page').addEventListener('click', () => {
+                            if (currentPage > 1) {
+                                // 隐藏当前页
+                                const currentPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                currentPageElements.forEach(el => {
+                                    el.style.display = 'none';
+                                });
+                                
+                                // 显示上一页
+                                currentPage--;
+                                const prevPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                prevPageElements.forEach(el => {
+                                    el.style.display = 'block';
+                                });
+                                
+                                updatePageInfo();
+                            }
+                        });
+                        
+                        // 下一页按钮事件（顶部）
+                        document.querySelector('.next-page').addEventListener('click', () => {
+                            if (currentPage < totalPages) {
+                                // 隐藏当前页
+                                const currentPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                currentPageElements.forEach(el => {
+                                    el.style.display = 'none';
+                                });
+                                
+                                // 显示下一页
+                                currentPage++;
+                                const nextPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                nextPageElements.forEach(el => {
+                                    el.style.display = 'block';
+                                });
+                                
+                                updatePageInfo();
+                            }
+                        });
+                        
+                        // 上一页按钮事件（底部）
+                        document.querySelector('.prev-page-bottom').addEventListener('click', () => {
+                            if (currentPage > 1) {
+                                // 隐藏当前页
+                                const currentPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                currentPageElements.forEach(el => {
+                                    el.style.display = 'none';
+                                });
+                                
+                                // 显示上一页
+                                currentPage--;
+                                const prevPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                prevPageElements.forEach(el => {
+                                    el.style.display = 'block';
+                                });
+                                
+                                updatePageInfo();
+                            }
+                        });
+                        
+                        // 下一页按钮事件（底部）
+                        document.querySelector('.next-page-bottom').addEventListener('click', () => {
+                            if (currentPage < totalPages) {
+                                // 隐藏当前页
+                                const currentPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                currentPageElements.forEach(el => {
+                                    el.style.display = 'none';
+                                });
+                                
+                                // 显示下一页
+                                currentPage++;
+                                const nextPageElements = canvasContainer.querySelectorAll(`[data-page="${currentPage}"]`);
+                                nextPageElements.forEach(el => {
+                                    el.style.display = 'block';
+                                });
+                                
+                                updatePageInfo();
+                            }
+                        });
+                    }, 1000);
                 }).catch(error => {
                     console.error('PDF加载失败:', error);
+                    console.error('错误详情:', {
+                        message: error.message,
+                        name: error.name,
+                        stack: error.stack
+                    });
+                    
+                    // 检查是否为204错误，提示用户关闭下载器
+                    let errorMessage = error.message;
+                    let additionalInfo = '';
+                    if (error.message && error.message.includes('204')) {
+                        additionalInfo = '<p class="mt-2">检测到服务器返回204状态码，可能是下载管理器（如IDM）拦截了请求。请暂时关闭下载管理器后再试。</p>';
+                    }
+                    
                     container.innerHTML = `
                         <div class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle"></i> PDF加载失败
+                            <p class="mt-2">错误信息: ${errorMessage}</p>
+                            ${additionalInfo}
                             <p class="mt-2">可能原因：文件损坏、浏览器不支持或文件过大</p>
-                            <p class="mt-2">!!pdf文档读取功能没有完善!!</p>
-                            <p>请尝试<a href="${pdfUrl}" download>下载文件</a>后用本地PDF阅读器或edge浏览器打开</p>
+                            <p>请尝试<a href="${pdfUrl}" download>下载文件</a>后用本地PDF阅读器打开</p>
                         </div>
                     `;
                 });
             }
-            
-            // 渲染单页PDF
-            function renderPage(pdf, pageNumber, container) {
-                // 清除现有页面
-                container.innerHTML = '';
                 
-                pdf.getPage(pageNumber).then(page => {
-                    const scale = 1.5;
-                    const viewport = page.getViewport({ scale: scale });
-                    
-                    // 准备canvas渲染
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    
-                    // 添加到容器
-                    container.appendChild(canvas);
-                    
-                    // 渲染PDF页面到canvas
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: viewport
-                    };
-                    
-                    const renderTask = page.render(renderContext);
-                    
-                    renderTask.promise.then(() => {
-                        console.log(`页面 ${pageNumber} 渲染完成`);
+                // 渲染单页PDF
+                function renderPage(pdf, pageNumber, container) {
+                    pdf.getPage(pageNumber).then(page => {
+                        // 获取容器宽度以适应页面
+                        const containerWidth = container.clientWidth;
+                        const viewport = page.getViewport({ scale: 1 });
+                        
+                        // 计算适应容器的缩放比例
+                        const scale = containerWidth / viewport.width * 0.95; // 留一些边距
+                        const scaledViewport = page.getViewport({ scale: scale });
+                        
+                        // 准备canvas渲染
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = scaledViewport.height;
+                        canvas.width = scaledViewport.width;
+                        canvas.className = 'pdf-page';
+                        canvas.style.display = 'none'; // 默认隐藏
+                        canvas.setAttribute('data-page', pageNumber);
+                        
+                        // 添加到容器
+                        container.appendChild(canvas);
+                        
+                        // 渲染PDF页面到canvas
+                        const renderContext = {
+                            canvasContext: context,
+                            viewport: scaledViewport
+                        };
+                        
+                        const renderTask = page.render(renderContext);
+                        
+                        renderTask.promise.then(() => {
+                            console.log(`页面 ${pageNumber} 渲染完成`);
+                        }).catch(error => {
+                            console.error('页面渲染错误:', error);
+                            // 创建错误信息div而不是在canvas内添加内容
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'alert alert-warning';
+                            errorDiv.innerHTML = `
+                                <i class="bi bi-exclamation-triangle"></i> 页面 ${pageNumber} 渲染失败
+                            `;
+                            errorDiv.style.display = 'none';
+                            errorDiv.setAttribute('data-page', pageNumber);
+                            container.appendChild(errorDiv);
+                        });
                     }).catch(error => {
-                        console.error('页面渲染错误:', error);
-                        container.innerHTML = `
-                            <div class="alert alert-warning">
-                                <i class="bi bi-exclamation-triangle"></i> 页面渲染失败
-                            </div>
+                        console.error('获取页面失败:', error);
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'alert alert-warning';
+                        errorDiv.innerHTML = `
+                            <i class="bi bi-exclamation-triangle"></i> 无法获取PDF页面 ${pageNumber}
                         `;
+                        errorDiv.style.display = 'none';
+                        errorDiv.setAttribute('data-page', pageNumber);
+                        container.appendChild(errorDiv);
                     });
-                }).catch(error => {
-                    console.error('获取页面失败:', error);
-                    container.innerHTML = `
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i> 无法获取PDF页面
-                        </div>
-                    `;
-                });
-            }
-            
-            // 检查是否为图片
-            function isImage(ext) {
-                return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext);
-            }
-            
-            // 检查是否为视频
-            function isVideo(ext) {
-                return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext);
-            }
-            
-            // 检查是否为音频
-            function isAudio(ext) {
-                return ['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext);
-            }
+                }
+                
+                // 调整图片大小以适应容器
+                function adjustImageSize(img) {
+                    // 确保图片已加载
+                    if (!img.complete) return;
+                    
+                    // 获取容器和图片的尺寸
+                    const container = img.parentElement;
+                    const containerWidth = container.clientWidth;
+                    const containerHeight = container.clientHeight;
+                    
+                    // 重置图片样式
+                    img.style.width = 'auto';
+                    img.style.height = 'auto';
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '100%';
+                    
+                    // 如果图片比容器大，则缩放图片
+                    if (img.naturalWidth > containerWidth || img.naturalHeight > containerHeight) {
+                        // 计算缩放比例
+                        const widthRatio = containerWidth / img.naturalWidth;
+                        const heightRatio = containerHeight / img.naturalHeight;
+                        const scale = Math.min(widthRatio, heightRatio) * 0.95; // 留一些边距
+                        
+                        img.style.width = (img.naturalWidth * scale) + 'px';
+                        img.style.height = (img.naturalHeight * scale) + 'px';
+                    }
+                }
+                
+                // 检查是否为图片
+                function isImage(ext) {
+                    return ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext);
+                }
+                
+                // 检查是否为视频
+                function isVideo(ext) {
+                    return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext);
+                }
+                
+                // 检查是否为音频
+                function isAudio(ext) {
+                    return ['mp3', 'wav', 'ogg', 'flac', 'aac'].includes(ext);
+                }
 
-            // 检查是否为文本文件(包括代码文件)
-            function isTextFile(ext) {
-                return [
-                    'txt', 'md', 'markdown', 'html', 'htm', 'css', 'js', 'json',
-                    'py', 'java', 'cpp', 'c', 'h', 'hpp', 'cs', 'php', 'rb', 'go',
-                    'rs', 'sh', 'bash', 'bat', 'cmd', 'ps1', 'sql', 'xml', 'yaml',
-                    'yml', 'ini', 'conf', 'config', 'log', 'properties', 'csv',
-                    'ts', 'tsx', 'jsx', 'vue', 'less', 'scss', 'sass', 'styl'
-                ].includes(ext);
-            }
+                // 检查是否为文本文件(包括代码文件)
+                function isTextFile(ext) {
+                    return [
+                        'txt', 'md', 'markdown', 'html', 'htm', 'css', 'js', 'json',
+                        'py', 'java', 'cpp', 'c', 'h', 'hpp', 'cs', 'php', 'rb', 'go',
+                        'rs', 'sh', 'bash', 'bat', 'cmd', 'ps1', 'sql', 'xml', 'yaml',
+                        'yml', 'ini', 'conf', 'config', 'log', 'properties', 'csv',
+                        'ts', 'tsx', 'jsx', 'vue', 'less', 'scss', 'sass', 'styl'
+                    ].includes(ext);
+                }
 
-            // 获取文件类型描述
-            function getFileTypeDescription(ext) {
-                const types = {
-                    // 图片类型
-                    'ico': '图标文件',
-                    'jpg': 'JPEG 图片',
-                    'jpeg': 'JPEG 图片',
-                    'png': 'PNG 图片',
-                    'gif': 'GIF 图片',
-                    'bmp': '位图图片',
-                    'webp': 'WebP 图片',
-                    // 视频类型
-                    'mp4': 'MP4 视频',
-                    'webm': 'WebM 视频',
-                    'ogg': 'OGG 视频',
-                    'mov': 'QuickTime 视频',
-                    'avi': 'AVI 视频',
-                    'mkv': 'MKV 视频',
-                    'flv': 'FLV 视频',
-                    'wmv': 'WMV 视频',
-                    '3gp': '3GP 视频',
-                    'm4v': 'M4V 视频',
-                    // 文档类型
-                    'pdf': 'PDF 文档',
-                    'txt': '文本文件',
-                    'doc': 'Word 文档',
-                    'docx': 'Word 文档',
-                    'xls': 'Excel 表格',
-                    'xlsx': 'Excel 表格',
-                    'ppt': 'PowerPoint 演示',
-                    'pptx': 'PowerPoint 演示',
-                    // 压缩包类型
-                    'zip': 'ZIP 压缩文件',
-                    'rar': 'RAR 压缩文件',
-                    '7z': '7-Zip 压缩文件',
-                    'gz': 'GZip 压缩文件',
-                    'bz2': 'BZip2 压缩文件',                   
-                    // 音频类型
-                    'mp3': 'MP3 音频文件',
-                    'wav': 'WAV 音频文件',
-                    'ogg': 'OGG 音频文件',
-                    'flac': 'FLAC 音频文件',
-                    'aac': 'AAC 音频文件',
-                    // Windows特有文件类型
-                    'exe': 'Windows可执行文件',
-                    'bat': 'Windows批处理文件',
-                    'msi': 'Windows安装程序',
-                    'dll': 'Windows动态链接库',
-                    'cmd': 'Windows命令文件',
-                    'reg': 'Windows注册表文件',
-                    'sys': 'Windows系统文件',
-                    'cab': 'Windows安装包',
-                    'inf': 'Windows安装信息文件',
-                    'scr': 'Windows屏幕保护程序',
-                    'com': 'Windows命令文件',
-                    'cpl': 'Windows控制面板项',
-                    'msc': 'Windows控制台应用程序',
-                    'ocx': 'Windows控件',
-                    'ax': 'WindowsActiveX控件',
-                    'chm': 'Windows帮助文件',
-                    'msp': 'Windows修补程序',
-                    'msu': 'Windows更新程序',
-                    'mui': 'Windows多语言界面文件',
-                    'ps1': 'Windows PowerShell脚本',
-                    'psm1': 'Windows PowerShell模块',
-                    'psd1': 'Windows PowerShell数据文件',
-                    'ps1xml': 'Windows PowerShell配置文件',
-                    'pssc': 'Windows PowerShell配置文件',
-                    'psexec': 'Windows远程执行工具',
-                    // 编程语言文件类型
-                    'sh': 'Shell脚本',
-                    'py': 'Python脚本',
-                    'java': 'Java源代码',
-                    'cpp': 'C++源代码',
-                    'c': 'C源代码',
-                    'go': 'Go源代码',
-                    'rb': 'Ruby脚本',
-                    'swift': 'Swift源代码',
-                    'rs': 'Rust源代码',
-                    'kt': 'Kotlin源代码',
-                    'h': 'C/C++头文件',
-                    // web文件类型
-                    'js': 'JavaScript脚本',
-                    'ts': 'TypeScript脚本',
-                    'php': 'PHP脚本',
-                    'html': 'HTML文件',
-                    'css': 'CSS文件',
-                    // 配置文件类型
-                    'json': 'JSON文件',
-                    'xml': 'XML文件',
-                    'yaml': 'YAML文件',
-                    'yml': 'YAML文件',
-                    'toml': 'TOML文件',
-                    'ini': 'INI文件',
-                    'conf': '配置文件',
-                    // 数据库文件类型
-                    'sql': 'SQL文件',
-                    'db': '数据库文件',
-                    'mdb': 'Microsoft Access数据库文件',
-                    'sqlite': 'SQLite数据库文件',
-                    'dbf': 'dBASE数据库文件',
-                    'accdb': 'Microsoft Access数据库文件',
-                    'mdbx': 'Microsoft Access数据库文件',
-                    'sqlitedb': 'SQLite数据库文件',
-                    'sqlite3': 'SQLite数据库文件',
-                    'sqlite2': 'SQLite数据库文件',
-                    'db3': 'SQLite数据库文件',
-                    'db2': 'SQLite数据库文件',
-                    'db4': 'SQLite数据库文件',
-                    'db5': 'SQLite数据库文件',
-                    'db6': 'SQLite数据库文件',
-                    'db7': 'SQLite数据库文件',
-                    'db8': 'SQLite数据库文件',
-                    'db9': 'SQLite数据库文件',
-                    // Mac OS特有文件类型
-                    'app': 'Mac OS应用程序',
-                    'dmg': 'Mac OS磁盘映像',
-                    'pkg': 'Mac OS安装包',
-                    'command': 'Mac OS命令文件',
-                    'plist': 'Mac OS属性列表文件',
-                    'icns': 'Mac OS图标文件',
-                    // 日志文件类型
-                    'log': '日志文件',
-                    // 其它常见文件类型
-                    'chm': '帮助文件',
-                    'md': 'Markdown文件',
-                    'csv': '逗号分隔值文件',
-                    'tsv': '制表符分隔值文件',
-                    'rtf': '富文本格式文件',
-                    'odt': 'OpenDocument文本文件',
-                    'epub': '电子书文件',
-                    'po': 'PO文件',
-                    'mo': 'MO文件',
-                    'pot': 'POT文件',
-                    'lang': '语言文件',
-                    'properties': 'Java属性文件'
-                };
+                // 获取文件类型描述
+                function getFileTypeDescription(ext) {
+                    const types = {
+                        // 图片类型
+                        'ico': '图标文件',
+                        'jpg': 'JPEG 图片',
+                        'jpeg': 'JPEG 图片',
+                        'png': 'PNG 图片',
+                        'gif': 'GIF 图片',
+                        'bmp': '位图图片',
+                        'webp': 'WebP 图片',
+                        // 视频类型
+                        'mp4': 'MP4 视频',
+                        'webm': 'WebM 视频',
+                        'ogg': 'OGG 视频',
+                        'mov': 'QuickTime 视频',
+                        'avi': 'AVI 视频',
+                        'mkv': 'MKV 视频',
+                        'flv': 'FLV 视频',
+                        'wmv': 'WMV 视频',
+                        '3gp': '3GP 视频',
+                        'm4v': 'M4V 视频',
+                        // 文档类型
+                        'pdf': 'PDF 文档',
+                        'txt': '文本文件',
+                        'doc': 'Word 文档',
+                        'docx': 'Word 文档',
+                        'xls': 'Excel 表格',
+                        'xlsx': 'Excel 表格',
+                        'ppt': 'PowerPoint 演示',
+                        'pptx': 'PowerPoint 演示',
+                        // 压缩包类型
+                        'zip': 'ZIP 压缩文件',
+                        'rar': 'RAR 压缩文件',
+                        '7z': '7-Zip 压缩文件',
+                        'gz': 'GZip 压缩文件',
+                        'bz2': 'BZip2 压缩文件',
+                        // 音频类型
+                        'mp3': 'MP3 音频文件',
+                        'wav': 'WAV 音频文件',
+                        'ogg': 'OGG 音频文件',
+                        'flac': 'FLAC 音频文件',
+                        'aac': 'AAC 音频文件',
+                        // Windows特有文件类型
+                        'exe': 'Windows可执行文件',
+                        'bat': 'Windows批处理文件',
+                        'msi': 'Windows安装程序',
+                        'dll': 'Windows动态链接库',
+                        'cmd': 'Windows命令文件',
+                        'reg': 'Windows注册表文件',
+                        'sys': 'Windows系统文件',
+                        'cab': 'Windows安装包',
+                        'inf': 'Windows安装信息文件',
+                        'scr': 'Windows屏幕保护程序',
+                        'com': 'Windows命令文件',
+                        'cpl': 'Windows控制面板项',
+                        'msc': 'Windows控制台应用程序',
+                        'ocx': 'Windows控件',
+                        'ax': 'WindowsActiveX控件',
+                        'chm': 'Windows帮助文件',
+                        'msp': 'Windows修补程序',
+                        'msu': 'Windows更新程序',
+                        'mui': 'Windows多语言界面文件',
+                        'ps1': 'Windows PowerShell脚本',
+                        'psm1': 'Windows PowerShell模块',
+                        'psd1': 'Windows PowerShell数据文件',
+                        'ps1xml': 'Windows PowerShell配置文件',
+                        'pssc': 'Windows PowerShell配置文件',
+                        'psexec': 'Windows远程执行工具',
+                        // 编程语言文件类型
+                        'sh': 'Shell脚本',
+                        'py': 'Python脚本',
+                        'java': 'Java源代码',
+                        'cpp': 'C++源代码',
+                        'c': 'C源代码',
+                        'go': 'Go源代码',
+                        'rb': 'Ruby脚本',
+                        'swift': 'Swift源代码',
+                        'rs': 'Rust源代码',
+                        'kt': 'Kotlin源代码',
+                        'h': 'C/C++头文件',
+                        // web文件类型
+                        'js': 'JavaScript脚本',
+                        'ts': 'TypeScript脚本',
+                        'php': 'PHP脚本',
+                        'html': 'HTML文件',
+                        'css': 'CSS文件',
+                        // 配置文件类型
+                        'json': 'JSON文件',
+                        'xml': 'XML文件',
+                        'yaml': 'YAML文件',
+                        'yml': 'YAML文件',
+                        'toml': 'TOML文件',
+                        'ini': 'INI文件',
+                        'conf': '配置文件',
+                        // 数据库文件类型
+                        'sql': 'SQL文件',
+                        'db': '数据库文件',
+                        'mdb': 'Microsoft Access数据库文件',
+                        'sqlite': 'SQLite数据库文件',
+                        'dbf': 'dBASE数据库文件',
+                        'accdb': 'Microsoft Access数据库文件',
+                        'mdbx': 'Microsoft Access数据库文件',
+                        'sqlitedb': 'SQLite数据库文件',
+                        'sqlite3': 'SQLite数据库文件',
+                        'sqlite2': 'SQLite数据库文件',
+                        'db3': 'SQLite数据库文件',
+                        'db2': 'SQLite数据库文件',
+                        'db4': 'SQLite数据库文件',
+                        'db5': 'SQLite数据库文件',
+                        'db6': 'SQLite数据库文件',
+                        'db7': 'SQLite数据库文件',
+                        'db8': 'SQLite数据库文件',
+                        'db9': 'SQLite数据库文件',
+                        // Mac OS特有文件类型
+                        'app': 'Mac OS应用程序',
+                        'dmg': 'Mac OS磁盘映像',
+                        'pkg': 'Mac OS安装包',
+                        'command': 'Mac OS命令文件',
+                        'plist': 'Mac OS属性列表文件',
+                        'icns': 'Mac OS图标文件',
+                        // 日志文件类型
+                        'log': '日志文件',
+                        // 其它常见文件类型
+                        'chm': '帮助文件',
+                        'md': 'Markdown文件',
+                        'csv': '逗号分隔值文件',
+                        'tsv': '制表符分隔值文件',
+                        'rtf': '富文本格式文件',
+                        'odt': 'OpenDocument文本文件',
+                        'epub': '电子书文件',
+                        'po': 'PO文件',
+                        'mo': 'MO文件',
+                        'pot': 'POT文件',
+                        'lang': '语言文件',
+                        'properties': 'Java属性文件',
+                        //特殊文件
+                        'aktp': 'Advanced_Key_Tools_GUI加密文件'
+                    };
 
-                return types[ext] || '未知文件类型';
-            }
-        });
+                    return types[ext] || '未知文件类型';
+                }
+                
+                // 设置文件图标
+                function setFileIcon(ext) {
+                    const iconElement = document.getElementById('file-icon');
+                    
+                    // 如果是AKTP文件，使用Bootstrap Icons的加密文件图标
+                    if (ext === 'aktp') {
+                        iconElement.outerHTML = '<i class="bi bi-file-earmark-lock" id="file-icon"></i>';
+                    }
+                    // 对于其他文件类型，保持默认的Bootstrap Icons
+                    // 可以根据需要添加更多文件类型的图标
+                }
+            });
     </script>
 
     <script>

@@ -206,6 +206,48 @@
         [data-theme="dark"] #theme-toggle {
           background-color: rgba(0, 0, 0, 0.2);
         }
+        
+        /* 深色模式下的组件样式 */
+        [data-theme="dark"] .upload-card {
+          background-color: var(--card-bg);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .upload-header {
+          background: var(--header-bg);
+        }
+        
+        [data-theme="dark"] .upload-body {
+          background-color: var(--card-bg);
+        }
+        
+        [data-theme="dark"] .drop-zone {
+          background-color: var(--input-bg);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .drop-zone:hover, 
+        [data-theme="dark"] .drop-zone.drag-over {
+          border-color: var(--primary-light);
+          background-color: rgba(90, 118, 255, 0.1);
+        }
+        
+        [data-theme="dark"] .disk-info {
+          background-color: var(--input-bg);
+        }
+        
+        [data-theme="dark"] .file-list {
+          background-color: var(--input-bg);
+          border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .file-item {
+          border-bottom-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .file-icon {
+          background-color: var(--input-bg);
+        }
     </style>
 </head>
 <body>

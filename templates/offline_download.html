@@ -29,6 +29,7 @@
             --gray: #a0a8b0;
             --light-gray: #252b33;
             --border: #2d333b;
+            --header-bg: linear-gradient(135deg, #2a3a8d, #1a1a5e);
         }
         
         body {
@@ -188,6 +189,23 @@
         
         [data-theme="dark"] #theme-toggle {
             background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 深色模式下的组件样式优化 */
+        [data-theme="dark"] .download-header {
+            background: var(--header-bg);
+        }
+        
+        [data-theme="dark"] .task-item {
+            border-bottom-color: var(--border);
+        }
+        
+        [data-theme="dark"] .task-item:hover {
+            background-color: rgba(90, 118, 255, 0.1);
+        }
+        
+        [data-theme="dark"] .progress {
+            background-color: var(--light-gray);
         }
     </style>
 </head>

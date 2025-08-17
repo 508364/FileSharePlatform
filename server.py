@@ -49,6 +49,13 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from flask import Flask, render_template, send_from_directory, request, jsonify, abort, session, redirect, url_for, flash
 
+# PyPDF库导入
+try:
+    import pypdf
+except ImportError:
+    print("PyPDF库未安装,请运行 'pip install PyPDF' 安装")
+    PyPDF = None
+
 # 确保JSONDecodeError可用
 try:
     from json import JSONDecodeError
@@ -86,7 +93,7 @@ DEFAULT_CONFIG = {
     'max_file_size': 100,              # 单个文件最大大小(MB)
     'max_total_size': 1024,            # 总存储空间大小(MB)
     'app_name': '文件共享平台',         # 应用名称
-    'app_version': '1.6',              # 应用版本
+    'app_version': '1.7',              # 应用版本
     'admin_user': 'admin',             # 管理员用户名
     'admin_password': 'admin@123',     # 管理员密码
     'port': 5000,                      # 服务端口
@@ -210,6 +217,12 @@ def save_config():
 # 文件元数据管理
 # ==============================================
 
+# 用于记录文件下载时间的字典，防止多线程下载时重复计数
+# 格式: {filename: last_download_time}
+download_time_records = {}
+# 下载去重时间窗口（秒）
+DOWNLOAD_DEDUPE_WINDOW = 1
+
 def load_metadata():
     """
     加载文件元数据
@@ -282,12 +295,22 @@ def update_metadata(filename, action='upload'):
     
     # 更新元数据
     if action == 'download':
-        metadata[filename]['download_count'] += 1
+        # 检查是否在去重时间窗口内
+        current_time = time.time()
+        last_download_time = download_time_records.get(filename, 0)
+        
+        # 如果不在时间窗口内，才增加下载次数
+        if current_time - last_download_time > DOWNLOAD_DEDUPE_WINDOW:
+            metadata[filename]['download_count'] += 1
+            download_time_records[filename] = current_time
     elif action == 'upload':
         metadata[filename]['size'] = file_size
         metadata[filename]['modified'] = file_mtime
     elif action == 'delete' and filename in metadata:  
         del metadata[filename]
+        # 同时删除下载时间记录
+        if filename in download_time_records:
+            del download_time_records[filename]
     
     # 保存元数据
     try:
@@ -1536,6 +1559,13 @@ def api_update_config():
 
         if 'geetest_key' in data:
             system_config['geetest_key'] = data['geetest_key']
+            
+        # 更新离线下载配置
+        if 'offline_download_enabled' in data:
+            system_config['offline_download_enabled'] = data['offline_download_enabled'] == 'on' or data['offline_download_enabled'] == True
+        else:
+            # 如果没有发送此参数，默认为禁用
+            system_config['offline_download_enabled'] = False
 
         # 更新端口配置
         if 'port' in data:
@@ -1587,6 +1617,28 @@ def download(filename):
     
     update_metadata(filename, 'download')
     return send_from_directory(upload_dir, filename, as_attachment=True)
+
+
+@app.route('/preview/<filename>')
+def preview(filename):
+    """文件预览路由"""
+    if '../' in filename or not re.match(r'^[\w\-. ]+$', filename):
+        abort(400)
+    
+    upload_dir = system_config['upload_folder']
+    file_path = os.path.join(upload_dir, filename)
+    
+    if not os.path.isfile(file_path):
+        abort(404)
+    
+    return send_from_directory(upload_dir, filename)
+
+
+@app.route('/captcha_settings')
+@require_admin_token
+def captcha_settings():
+    """验证码设置页面"""
+    return render_template('captcha_settings.html', system_config=system_config)
 
 
 @app.route('/')
@@ -1752,6 +1804,10 @@ offline_download_thread.start()
 @app.route('/api/offline_download', methods=['POST'])
 def api_offline_download():
     """添加离线下载任务API"""
+    # 检查离线下载功能是否启用
+    if not system_config.get('offline_download_enabled', False):
+        return jsonify({"status": "error", "message": "离线下载功能未启用"}), 403
+    
     data = request.get_json()
     url = data.get('url')
     geetest = data.get('geetest', {})
@@ -1953,6 +2009,50 @@ def serve_cmaps(filename):
     return send_from_directory('static/cmaps', filename)
 
 
+# PyPDF PDF信息API
+@app.route('/api/pdf_info')
+def api_pdf_info():
+    """获取PDF文件信息API"""
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({"status": "error", "message": "未提供文件名"}), 400
+    
+    # 获取文件路径
+    file_path = os.path.join(system_config['upload_folder'], filename)
+    
+    if not os.path.exists(file_path):
+        return jsonify({"status": "error", "message": "文件不存在"}), 404
+    
+    try:
+        # 导入PyPDF库
+        import pypdf
+        
+        # 打开PDF文件
+        with open(file_path, 'rb') as file:
+            pdf_reader = PyPDF.PdfReader(file)
+            # 获取PDF信息
+            num_pages = len(pdf_reader.pages)
+            
+            # 获取PDF元数据
+            metadata = pdf_reader.metadata
+            
+            return jsonify({
+                "status": "success",
+                "pages": num_pages,
+                "metadata": {
+                    "title": metadata.get('/Title', '') if metadata else '',
+                    "author": metadata.get('/Author', '') if metadata else '',
+                    "subject": metadata.get('/Subject', '') if metadata else '',
+                    "creator": metadata.get('/Creator', '') if metadata else '',
+                    "producer": metadata.get('/Producer', '') if metadata else '',
+                    "creation_date": metadata.get('/CreationDate', '') if metadata else '',
+                    "modification_date": metadata.get('/ModDate', '') if metadata else ''
+                }
+            })
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"PDF处理失败: {str(e)}"}), 500
+
+
 # 更新日志页面
 @app.route('/changelog')
 def changelog():
@@ -2001,8 +2101,12 @@ def error_500():
     return render_template('500.html')
 
 
-# 418彩蛋触发路由
-@app.route('/418/teapot')
+# 418彩蛋路由
+@app.route('/418')
+def error_418():
+    """418错误页面"""
+    return render_template('418.html')
+
 # 错误处理器
 @app.errorhandler(400)
 def handle_400(error):
