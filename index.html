@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FileSharePlatform - 高效文件共享平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-darker: #020617;
+            --text-light: #f8fafc;
+            --text-gray: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+        }
+        
+        body {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .glass-effect {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .tech-grid {
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.6);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+        
+        .version-card {
+            transition: all 0.3s ease;
+        }
+        
+        .version-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="tech-grid">
+    <!-- 导航栏 -->
+    <nav class="fixed w-full top-0 z-50 glass-effect shadow-lg">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div class="h-10 w-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <i class="fa fa-cloud text-white text-xl"></i>
+                    </div>
+                    <span class="text-xl font-bold">FileSharePlatform</span>
+                </div>
+                
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="#features" class="hover:text-blue-400 transition-colors">功能特性</a>
+                    <a href="#download" class="hover:text-blue-400 transition-colors">下载</a>
+                    <a href="https://github.com/508364/FileSharePlatform" target="_blank" class="flex items-center space-x-2 hover:text-blue-400 transition-colors">
+                        <i class="fa fa-github"></i>
+                        <span>GitHub</span>
+                    </a>
+                </div>
+                
+                <button class="md:hidden text-2xl">
+                    <i class="fa fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <header class="pt-24 pb-16 md:pt-32 md:pb-24">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-6">
+                    <span class="bg-gradient-to-r from-blue-400 via-purple-500 to-green-400 bg-clip-text text-transparent">高效文件共享平台</span>
+                </h1>
+                <p class="text-xl text-gray-400 mb-8 max-w-3xl mx-auto">
+                    简单易用、安全可靠的文件分享解决方案，支持多文件上传、离线下载、内网穿透等多种功能。
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4 mb-12">
+                    <a id="download-latest" href="#" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium transition-all shadow-lg">
+                        <i class="fa fa-download mr-2"></i>立即下载
+                    </a>
+                    <a href="https://github.com/508364/FileSharePlatform" target="_blank" class="px-8 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-full font-medium transition-all border border-gray-700">
+                        <i class="fa fa-github mr-2"></i>查看源码
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 下载区域 -->
+    <section id="download" class="py-16 relative">
+        <div class="container mx-auto px-4">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">下载 FileSharePlatform</h2>
+                    <p class="text-gray-400">选择适合您系统的版本</p>
+                </div>
+                
+                <!-- 所有版本列表 -->
+                <div id="all-versions" class="glass-effect rounded-2xl p-6 shadow-xl">
+                    <h3 class="text-xl font-bold mb-6">所有版本</h3>
+                    <div class="max-h-[70vh] overflow-y-auto pr-2">
+                        <div id="versions-list" class="space-y-4">
+                            <!-- 版本将通过JavaScript动态加载 -->
+                            <div class="text-center py-8">
+                                <i class="fa fa-spinner fa-spin text-2xl text-blue-400"></i>
+                                <p class="mt-2">正在加载版本信息...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 功能特性 -->
+    <section id="features" class="py-16 bg-gray-900/50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold mb-4">强大功能，简单操作</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">FileSharePlatform 提供丰富的功能，满足您的各种文件管理需求</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 功能卡片 1 -->
+                <div class="glass-effect rounded-xl p-6 border border-blue-500/20 transition-all hover:-translate-y-1 hover:shadow-lg">
+                    <div class="w-14 h-14 rounded-lg bg-blue-500/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-cloud-upload text-2xl text-blue-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">多文件上传(v1.4+)</h3>
+                    <p class="text-gray-400">支持批量上传多个文件，自动生成文件分享链接，方便快捷地分享给他人。</p>
+                </div>
+                
+                <!-- 功能卡片 2 -->
+                <div class="glass-effect rounded-xl p-6 border border-purple-500/20 transition-all hover:-translate-y-1 hover:shadow-lg">
+                    <div class="w-14 h-14 rounded-lg bg-purple-500/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-download text-2xl text-purple-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">离线下载(v1.3+)</h3>
+                    <p class="text-gray-400">支持添加下载链接，系统自动下载文件并保存，无需人工值守。</p>
+                </div>
+                
+                <!-- 功能卡片 3 -->
+                <div class="glass-effect rounded-xl p-6 border border-green-500/20 transition-all hover:-translate-y-1 hover:shadow-lg">
+                    <div class="w-14 h-14 rounded-lg bg-green-500/20 flex items-center justify-center mb-4">
+                        <i class="fa fa-random text-2xl text-green-400"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3">内网穿透(v1.8+)</h3>
+                    <p class="text-gray-400">集成内网穿透功能，让外网用户也能访问您的本地文件分享服务。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="py-10 bg-gray-900/50 border-t border-gray-800">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <div class="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                        <i class="fa fa-cloud text-white text-sm"></i>
+                    </div>
+                    <span class="text-lg font-bold">FileSharePlatform</span>
+                </div>
+                
+                <div class="text-center mt-6 text-gray-500 text-sm">
+                    <p>&copy; 2025 FileSharePlatform. 508364 保留所有权益.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取GitHub Release信息
+            fetch('https://api.github.com/repos/508364/FileSharePlatform/releases')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        console.error('没有获取到版本信息');
+                        document.getElementById('versions-list').innerHTML = 
+                            '<div class="text-center text-gray-400 py-8">暂无可用版本</div>';
+                        return;
+                    }
+                    
+                    // 按发布日期降序排序
+                    const sortedReleases = data.sort((a, b) => 
+                        new Date(b.published_at) - new Date(a.published_at)
+                    );
+                    
+                    // 获取最新版本
+                    const latestRelease = sortedReleases[0];
+                    const latestExeAsset = latestRelease.assets.find(asset => asset.name.endsWith('.exe'));
+                    
+                    // 更新"立即下载"按钮链接
+                    if (latestExeAsset) {
+                        const downloadLatestBtn = document.getElementById('download-latest');
+                        downloadLatestBtn.href = `https://github.com/508364/FileSharePlatform/releases/download/${latestRelease.tag_name}/${latestExeAsset.name}`;
+                    }
+                    
+                    // 显示所有版本
+                    const versionsList = document.getElementById('versions-list');
+                    versionsList.innerHTML = '';
+                    
+                    sortedReleases.forEach(release => {
+                        const releaseDate = new Date(release.published_at).toLocaleDateString('zh-CN');
+                        const hasExe = release.assets.some(asset => asset.name.endsWith('.exe'));
+                        const exeAsset = release.assets.find(asset => asset.name.endsWith('.exe'));
+                        const zipAsset = release.assets.find(asset => asset.name.endsWith('.zip')) || release.assets[0];
+                        
+                        // 构建正确的下载链接
+                        const exeUrl = exeAsset ? 
+                            `https://github.com/508364/FileSharePlatform/releases/download/${release.tag_name}/${exeAsset.name}` : 
+                            '';
+                            
+                        const zipUrl = zipAsset ? 
+                            `https://github.com/508364/FileSharePlatform/releases/download/${release.tag_name}/${zipAsset.name}` : 
+                            `https://github.com/508364/FileSharePlatform/archive/refs/tags/${release.tag_name}.zip`;
+                        
+                        const versionCard = document.createElement('div');
+                        versionCard.className = 'version-card glass-effect p-5 rounded-lg border border-gray-700';
+                        versionCard.innerHTML = `
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                <div>
+                                    <h4 class="font-bold text-lg">${release.name || release.tag_name}</h4>
+                                    <p class="text-gray-400 text-sm">发布日期: ${releaseDate}</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    ${hasExe ? `
+                                    <a href="${exeUrl}" 
+                                       class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded flex items-center gap-1">
+                                        <i class="fa fa-windows"></i>
+                                        <span>.exe(64位)</span>
+                                    </a>` : ''}
+                                    <a href="${zipUrl}" 
+                                       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded flex items-center gap-1">
+                                        <i class="fa fa-code"></i>
+                                        <span>通用源码</span>
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                        
+                        versionsList.appendChild(versionCard);
+                    });
+                })
+                .catch(error => {
+                    console.error('获取GitHub版本信息失败:', error);
+                    document.getElementById('versions-list').innerHTML = `
+                        <div class="text-center text-red-400 py-8">
+                            <i class="fa fa-exclamation-triangle mr-2"></i>
+                            获取版本信息失败，请稍后重试
+                        </div>
+                    `;
+                });
+        });
+    </script>
+</body>
+</html>
