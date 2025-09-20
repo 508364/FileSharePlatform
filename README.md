@@ -3,7 +3,7 @@
 <div align="center">
   <img src="favicon.ico" alt="文件共享平台" width="80" height="80">
   <p align="center">
-    <a href="https://github.com/508364/FileSharePlatform"><strong>✨ 项目主页</strong></a>
+    <a href="https://508364.github.io/FileSharePlatform"><strong>✨ 项目主页</strong></a>
     ·
     <a href="API_DOC.md"><strong>📖 API文档</strong></a>
     ·
