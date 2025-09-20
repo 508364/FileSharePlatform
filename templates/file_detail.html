@@ -19,6 +19,55 @@
             --border-color: #dee2e6;
             --card-bg: #ffffff;
             --bg-color: #f5f7fb;
+            --text-color-no-dark: #212529; /* 不随深色模式改变的文本颜色 */
+        }
+        
+        /* 不随深色模式改变颜色的文本 */
+        .text-no-dark {
+            color: var(--text-color-no-dark);
+        }
+        
+        /* 深色模式下的模态框样式 */
+        [data-theme="dark"] .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .modal-header {
+            border-bottom-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .modal-footer {
+            border-top-color: var(--border-color);
+        }
+        
+        /* 深色模式下的按钮样式 */
+        [data-theme="dark"] .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        [data-theme="dark"] .btn-secondary {
+            background-color: var(--gray);
+            border-color: var(--gray);
+        }
+        
+        /* 深色模式下的消息提示样式 */
+        [data-theme="dark"] .bg-dark-success {
+            background-color: #10b981 !important;
+        }
+        
+        [data-theme="dark"] .bg-dark-error {
+            background-color: #ef4444 !important;
+        }
+        
+        [data-theme="dark"] .bg-dark-warning {
+            background-color: #f59e0b !important;
+        }
+        
+        [data-theme="dark"] .bg-dark-info {
+            background-color: #3b82f6 !important;
         }
         
 
@@ -393,8 +442,10 @@
             const filename = params.get('file');
             
             if (!filename) {
-                alert('未指定文件');
-                window.location.href = '/';
+                showMessage('未指定文件', 'error');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
                 return;
             }
             
@@ -480,10 +531,23 @@
                     renderPDF(filename);
                 } 
                 else if (isVideo(ext)) {
+                    // 设置正确的MIME类型
+                    let mimeType = 'video/' + ext;
+                    if (ext === 'mp4') mimeType = 'video/mp4';
+                    else if (ext === 'webm') mimeType = 'video/webm';
+                    else if (ext === 'ogg') mimeType = 'video/ogg';
+                    else if (ext === 'mov') mimeType = 'video/quicktime';
+                    else if (ext === 'avi') mimeType = 'video/x-msvideo';
+                     
                     container.innerHTML = `
-                        <video controls class="video-player">
-                            <source src="/preview/${encodeURIComponent(filename)}" type="video/${ext === 'mp4' ? 'mp4' : ext}">
-                            您的浏览器不支持视频播放
+                        <video controls class="video-player" preload="metadata">
+                            <source src="/preview/${encodeURIComponent(filename)}" type="${mimeType}">
+                            <p>您的浏览器不支持视频播放。请尝试以下操作：</p>
+                            <ul>
+                                <li>更新您的浏览器到最新版本</li>
+                                <li>尝试使用不同的浏览器</li>
+                                <li><a href="/preview/${encodeURIComponent(filename)}" download>下载文件</a>后使用本地播放器观看</li>
+                            </ul>
                         </video>
                     `;
                 } 
@@ -604,7 +668,7 @@
                         document.querySelector('.text-content').textContent = newDecodedText;
                         document.querySelector('.alert').innerHTML = `当前编码: ${selectedEncoding}`;
                     } catch (e) {
-                        alert(`使用编码 ${selectedEncoding} 解码失败: ${e.message}`);
+                        showMessage(`使用编码 ${selectedEncoding} 解码失败: ${e.message}`, 'error');
                     }
                 });
             } else {
@@ -633,7 +697,7 @@
                         const decodedText = decoder.decode(buffer);
                         document.getElementById('decoded-text-area').textContent = decodedText;
                     } catch (e) {
-                        alert(`使用编码 ${selectedEncoding} 解码失败: ${e.message}`);
+                        showMessage(`使用编码 ${selectedEncoding} 解码失败: ${e.message}`, 'error');
                     }
                 });
             }
@@ -986,7 +1050,7 @@
                 
                 // 检查是否为视频
                 function isVideo(ext) {
-                    return ['mp4', 'webm', 'ogg', 'mov', 'avi'].includes(ext);
+                    return ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'flv', 'wmv'].includes(ext);
                 }
                 
                 // 检查是否为音频
@@ -1194,6 +1258,144 @@
                 }
             });
         });
+    </script>
+    
+    <!-- 模态窗口 -->
+    <div id="modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="background-color: var(--card-bg); color: var(--text-color); border-color: var(--border-color);">
+                <div class="modal-header" style="border-bottom-color: var(--border-color);">
+                    <h5 id="modal-title" class="modal-title"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(var(--invert-filter));"></button>
+                </div>
+                <div id="modal-content" class="modal-body"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 确认对话框 -->
+    <div id="confirm-dialog" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: var(--card-bg); color: var(--text-color); border-color: var(--border-color);">
+                <div class="modal-header" style="border-bottom-color: var(--border-color);">
+                    <h5 class="modal-title">确认操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: invert(var(--invert-filter));"></button>
+                </div>
+                <div id="confirm-message" class="modal-body"></div>
+                <div class="modal-footer" style="border-top-color: var(--border-color);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background-color: var(--gray); border-color: var(--gray);">取消</button>
+                    <button type="button" id="confirm-ok" class="btn btn-primary" style="background-color: var(--primary); border-color: var(--primary);">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 消息提示 -->
+    <div id="message-toast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true" style="position: fixed; top: 20px; right: 20px; z-index: 9999;">
+        <div class="d-flex">
+            <div id="message-content" class="toast-body"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+    
+    <style>
+        /* 模态窗口样式 */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        
+        /* 深色模式适配 */
+        [data-theme="dark"] .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        
+        /* 确保模态窗口在深色模式下的可读性 */
+        [data-theme="dark"] {
+            --invert-filter: 1;
+        }
+        
+        :not([data-theme="dark"]) {
+            --invert-filter: 0;
+        }
+    </style>
+    
+    <script>
+        // 模态窗口函数
+        function showModal(title, content) {
+            const modal = new bootstrap.Modal(document.getElementById('modal'));
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-content').innerHTML = content;
+            modal.show();
+        }
+        
+        // 确认对话框函数
+        function showConfirm(message, callback) {
+            const confirmDialog = new bootstrap.Modal(document.getElementById('confirm-dialog'));
+            document.getElementById('confirm-message').textContent = message;
+            
+            // 移除之前的事件监听器
+            const confirmOkBtn = document.getElementById('confirm-ok');
+            const newConfirmOkBtn = confirmOkBtn.cloneNode(true);
+            confirmOkBtn.parentNode.replaceChild(newConfirmOkBtn, confirmOkBtn);
+            
+            // 添加新的事件监听器
+            newConfirmOkBtn.addEventListener('click', function() {
+                confirmDialog.hide();
+                if (typeof callback === 'function') {
+                    callback(true);
+                }
+            });
+            
+            // 监听模态窗口关闭事件
+            document.getElementById('confirm-dialog').addEventListener('hidden.bs.modal', function handler() {
+                if (typeof callback === 'function') {
+                    setTimeout(() => {
+                        callback(false);
+                    }, 100);
+                }
+                document.getElementById('confirm-dialog').removeEventListener('hidden.bs.modal', handler);
+            });
+            
+            confirmDialog.show();
+        }
+        
+        // 消息提示函数
+        function showMessage(message, type = 'info') {
+            const toast = new bootstrap.Toast(document.getElementById('message-toast'));
+            const toastEl = document.getElementById('message-toast');
+            const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+            
+            // 设置消息类型样式
+            toastEl.className = 'toast align-items-center border-0';
+            
+            if (isDarkMode) {
+                // 深色模式下的样式
+                if (type === 'success') {
+                    toastEl.classList.add('bg-dark-success');
+                } else if (type === 'error') {
+                    toastEl.classList.add('bg-dark-error');
+                } else if (type === 'warning') {
+                    toastEl.classList.add('bg-dark-warning');
+                } else {
+                    toastEl.classList.add('bg-dark-info');
+                }
+            } else {
+                // 浅色模式下的样式
+                if (type === 'success') {
+                    toastEl.classList.add('bg-success');
+                } else if (type === 'error') {
+                    toastEl.classList.add('bg-danger');
+                } else if (type === 'warning') {
+                    toastEl.classList.add('bg-warning');
+                } else {
+                    toastEl.classList.add('bg-info');
+                }
+            }
+            
+            document.getElementById('message-content').textContent = message;
+            toast.show();
+        }
     </script>
 </body>
 </html>

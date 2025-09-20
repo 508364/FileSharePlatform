@@ -97,6 +97,7 @@
             --text-muted: #6c757d;
             --github-body-bg: #f6f8fa;
             --task-card-bg: #ffffff;
+            --text-color-no-dark: #212529; /* 不随深色模式改变的文本颜色 */
         }
         
         [data-theme="dark"] {
@@ -110,6 +111,44 @@
             --text-muted: #a0a8b0;
             --github-body-bg: #1a1c23;
             --task-card-bg: #252b33;
+        }
+        
+        /* 不随深色模式改变颜色的文本 */
+        .text-no-dark {
+            color: var(--text-color-no-dark);
+        }
+        
+        /* 深色模式下的模态框样式 */
+        [data-theme="dark"] .modal-content {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .modal-header {
+            border-bottom-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .modal-footer {
+            border-top-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .btn-secondary {
+            background-color: var(--input-bg);
+            border-color: var(--border-color);
+            color: var(--text-color);
+        }
+        
+        /* 深色模式下的消息提示样式 */
+        [data-theme="dark"] #message-box .toast {
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        [data-theme="dark"] #message-box .toast-header {
+            background-color: var(--card-bg);
+            border-bottom-color: var(--border-color);
         }
         
         body {
@@ -461,7 +500,7 @@
                 const branch = document.getElementById('github-branch').value || 'main';
                 
                 if (!repoUrl) {
-                    alert('请输入GitHub仓库URL');
+                    showMessage('请输入GitHub仓库URL', 'warning');
                     return;
                 }
                 
@@ -498,21 +537,46 @@
                 })
                 .then(data => {
                     if (data.status === 'success') {
-                        alert('克隆任务已添加');
+                        showMessage('克隆任务已添加', 'success');
                         loadTasks();
                     } else {
-                        alert(`添加任务失败: ${data.message}`);
+                        showMessage(`添加任务失败: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('添加任务失败:', error);
-                    alert('添加任务失败: ' + error.message);
+                    showMessage('添加任务失败: ' + error.message, 'error');
                 });
             }
             
             // 取消任务
             function cancelTask(taskId) {
-                if (!confirm('确定要取消这个任务吗？')) return;
+                showConfirm('确认取消', '确定要取消这个任务吗？', function() {
+                    fetch('/api/github_clone/cancel_task', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            task_id: taskId
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showMessage('任务已取消', 'success');
+                            loadTasks();
+                        } else {
+                            showMessage(`取消任务失败: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('取消任务失败:', error);
+                        showMessage('取消任务失败', 'error');
+                    });
+                });
+                
+                return;
                 
                 fetch('/api/github_clone/cancel_task', {
                     method: 'POST',
@@ -526,21 +590,47 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        alert('任务已取消');
+                        showMessage('任务已取消', 'success');
                         loadTasks();
                     } else {
-                        alert(`取消任务失败: ${data.message}`);
+                        showMessage(`取消任务失败: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('取消任务失败:', error);
-                    alert('取消任务失败');
+                    showMessage('取消任务失败', 'error');
                 });
             }
             
             // 移除任务
             function removeTask(taskId) {
-                if (!confirm('确定要从列表中移除这个任务吗？')) return;
+                showConfirm('确认移除', '确定要从列表中移除这个任务吗？', function() {
+                    fetch('/api/github_clone/clear_tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type: 'single',
+                            task_id: taskId
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showMessage('任务已移除', 'success');
+                            loadTasks();
+                        } else {
+                            showMessage(`移除任务失败: ${data.message}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('移除任务失败:', error);
+                        showMessage('移除任务失败', 'error');
+                    });
+                });
+                
+                return;
                 
                 fetch('/api/github_clone/clear_tasks', {
                     method: 'POST',
@@ -555,15 +645,15 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        alert('任务已移除');
+                        showMessage('任务已移除', 'success');
                         loadTasks();
                     } else {
-                        alert(`移除任务失败: ${data.message}`);
+                        showMessage(`移除任务失败: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('移除任务失败:', error);
-                    alert('移除任务失败');
+                    showMessage('移除任务失败', 'error');
                 });
             }
             
@@ -581,15 +671,15 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        alert(`已清除 ${data.removed_count} 个任务`);
+                        showMessage(`已清除 ${data.removed_count} 个任务`, 'success');
                         loadTasks();
                     } else {
-                        alert(`清除任务失败: ${data.message}`);
+                        showMessage(`清除任务失败: ${data.message}`, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('清除任务失败:', error);
-                    alert('清除任务失败');
+                    showMessage('清除任务失败', 'error');
                 });
             }
             
@@ -601,7 +691,121 @@
         });
     </script>
 
+    <!-- 模态窗口 -->
+    <div id="modal" class="modal fade" tabindex="-1" aria-labelledby="modal-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal-label">消息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    模态窗口内容
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认对话框 -->
+    <div id="confirm-modal" class="modal fade" tabindex="-1" aria-labelledby="confirm-label" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirm-label">确认操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="confirm-body">
+                    您确定要执行此操作吗？
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="confirm-yes">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 消息提示 -->
+    <div id="message-box" class="position-fixed top-5 end-5 z-50 d-none">
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="message-title">提示</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="message-text">
+                消息内容
+            </div>
+        </div>
+    </div>
+
     <script>
+        // 显示模态窗口
+        function showModal(title, content) {
+            const modal = document.getElementById('modal');
+            document.getElementById('modal-label').textContent = title;
+            document.getElementById('modal-body').textContent = content;
+            new bootstrap.Modal(modal).show();
+        }
+        
+        // 显示确认对话框
+        function showConfirm(title, content, callback) {
+            const confirmModal = document.getElementById('confirm-modal');
+            document.getElementById('confirm-label').textContent = title;
+            document.getElementById('confirm-body').textContent = content;
+            
+            // 移除之前的事件监听器
+            const confirmYes = document.getElementById('confirm-yes');
+            const newConfirmYes = confirmYes.cloneNode(true);
+            confirmYes.parentNode.replaceChild(newConfirmYes, confirmYes);
+            
+            // 添加新的事件监听器
+            newConfirmYes.addEventListener('click', function() {
+                if (callback && typeof callback === 'function') {
+                    callback();
+                }
+                bootstrap.Modal.getInstance(confirmModal).hide();
+            });
+            
+            new bootstrap.Modal(confirmModal).show();
+        }
+        
+        // 显示消息提示
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('message-box');
+            const messageTitle = document.getElementById('message-title');
+            const messageText = document.getElementById('message-text');
+            
+            // 设置消息类型样式
+            const toast = messageBox.querySelector('.toast');
+            toast.className = 'toast show';
+            
+            // 设置标题和内容
+            if (type === 'success') {
+                messageTitle.textContent = '成功';
+                messageTitle.className = 'me-auto text-success';
+            } else if (type === 'error') {
+                messageTitle.textContent = '错误';
+                messageTitle.className = 'me-auto text-danger';
+            } else if (type === 'warning') {
+                messageTitle.textContent = '警告';
+                messageTitle.className = 'me-auto text-warning';
+            } else {
+                messageTitle.textContent = '提示';
+                messageTitle.className = 'me-auto';
+            }
+            
+            messageText.textContent = message;
+            messageBox.classList.remove('d-none');
+            
+            // 3秒后自动隐藏
+            setTimeout(function() {
+                messageBox.classList.add('d-none');
+            }, 3000);
+        }
+        
         // 深色模式切换功能
         document.addEventListener('DOMContentLoaded', function() {
             const themeToggle = document.getElementById('theme-toggle');

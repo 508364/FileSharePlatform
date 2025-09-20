@@ -24,6 +24,7 @@
             --border: #e3e6f0;
             --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             --transition: all 0.3s ease;
+            --text-color-no-dark: #212529; /* 不随深色模式改变的文本颜色 */
             
             /* 深色模式变量 */
             --dark-bg: #121826;
@@ -31,6 +32,11 @@
             --dark-text: #e2e8f0;
             --dark-border: #334155;
             --dark-header: #0f172a;
+        }
+        
+        /* 不随深色模式改变颜色的文本 */
+        .text-no-dark {
+            color: var(--text-color-no-dark);
         }
         
         * {
@@ -58,7 +64,7 @@
         .form-check-label {
             margin-left: 10px;
             font-size: 16px;
-            color: var(--text-color);
+            color: var(--dark);
             cursor: pointer;
             transition: color 0.3s;
         }
@@ -71,7 +77,7 @@
             cursor: pointer;
             position: relative;
             appearance: none;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border);
             border-radius: 4px;
             transition: all 0.3s;
             flex-shrink: 0;
@@ -186,6 +192,11 @@
             color: var(--dark-text);
         }
         
+        /* 深色模式下的复选框标签 */
+        body.dark-mode .form-check-label {
+            color: var(--dark-text);
+        }
+    
         /* 深色模式下的复选框 */
         body.dark-mode .form-check-input {
             border-color: var(--dark-border);
@@ -797,9 +808,6 @@
             <button class="logout-btn" onclick="location.href='/error_management'">
                 <i class="bi bi-exclamation-triangle btn-sm"></i> 错误页面管理
             </button>
-            <button class="logout-btn" onclick="location.href='/captcha_settings'">
-                <i class="bi bi-shield-check btn-sm"></i> 验证码设置
-            </button>
             <button class="logout-btn" onclick="location.href='/admin/github_clone'">
                 <i class="bi bi-github btn-sm"></i> GitHub克隆下载
             </button>
@@ -821,6 +829,7 @@
             <li><a href="#security" class="nav-link" data-section="security"><i class="bi bi-shield-lock"></i> <span>安全设置</span></a></li>
             <li><a href="#network" class="nav-link" data-section="network"><i class="bi bi-wifi"></i> <span>网络配置</span></a></li>
             <li><a href="#files" class="nav-link" data-section="files"><i class="bi bi-files"></i> <span>文件管理</span></a></li>
+            <li><a href="#chmlfrp" class="nav-link" data-section="chmlfrp"><i class="bi bi-box-arrow-in-up-right"></i> <span>ChmlFrp内网穿透</span></a></li>
         </ul>
     </nav>
     
@@ -841,6 +850,17 @@
         <!-- 仪表盘部分 -->
         <section id="dashboard" class="section-content active">
             <div class="dashboard-grid">
+                <div class="dashboard-card" style="grid-column: span 3; background-color: var(--secondary-bg);">
+                    <h2><i class="bi bi-gear"></i> 系统管理</h2>
+                    <div style="display: flex; gap: 15px; margin-top: 15px;">
+                        <button id="update-config-btn" class="btn btn-primary">
+                            <i class="bi bi-arrow-clockwise"></i> 自动更新配置文件
+                        </button>
+                        <button id="view-system-log-btn" class="btn btn-info">
+                            <i class="bi bi-file-text"></i> 查看系统日志
+                        </button>
+                    </div>
+                </div>
                 <div class="dashboard-card">
                     <h2><i class="bi bi-hdd"></i> 存储空间</h2>
                     <div class="space-meter">
@@ -907,6 +927,91 @@
             </div>
         </section>
         
+        <!-- ChmlFrp内网穿透部分 -->
+        <section id="chmlfrp" class="section-content">
+            <div class="dashboard-card">
+                <h2><i class="bi bi-box-arrow-in-up-right"></i> ChmlFrp内网穿透配置</h2>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="chmlfrp_token">用户Token</label>
+                        <input type="text" id="chmlfrp_token" name="chmlfrp_token" 
+                               value="{{ system_config.chmlfrp_token or '' }}" placeholder="请输入您的ChmlFrp Token">
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3><i class="bi bi-tunnel"></i> 已创建隧道列表</h3>
+                        <button id="load-tunnel-list" class="btn btn-secondary">
+                            <i class="bi bi-refresh"></i> 加载隧道列表
+                        </button>
+                    </div>
+                    <div id="tunnel-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">
+                        <p>请先输入Token并点击加载隧道列表</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                    <h3><i class="bi bi-cog"></i> 隧道配置</h3>
+                    <div id="selected-tunnel-info" style="margin-top: 10px; padding: 15px; background-color: var(--secondary-bg); border-radius: 6px;">
+                        请先选择一个隧道
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button id="generate-frpc-config" class="btn btn-primary" disabled>
+                            <i class="bi bi-terminal"></i> 生成快捷启动命令
+                        </button>
+                        <button id="start-tunnel" class="btn btn-success" disabled>
+                            <i class="bi bi-play-circle"></i> 启动隧道
+                        </button>
+                        <button id="stop-tunnel" class="btn btn-danger" disabled>
+                            <i class="bi bi-stop-circle"></i> 停止隧道
+                        </button>
+                    </div>
+                    
+                    <!-- ChmlFrp状态显示 -->
+                    <div id="chmlfrp-status" style="margin-top: 15px; padding: 10px; background-color: var(--secondary-bg); border-radius: 6px;">
+                      <span><i class="bi bi-circle-fill" style="color: #6c757d; margin-right: 5px;"></i></span>
+                      <span>ChmlFrp状态：未知</span>
+                      <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        检查状态
+                      </button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px;">
+                    <p style="margin: 0;"><i class="bi bi-exclamation-triangle"></i> 获取真实IP创建隧道时添加额外参数：<code>proxy_protocol_version = v2</code>即可</p>
+                </div>
+                
+                <!-- 日志显示框 -->
+                <div id="chmlfrp-log-container" style="margin-top: 20px; display: none;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;"><i class="bi bi-file-text"></i> ChmlFrp运行日志</h3>
+                    <div>
+                      <button id="refresh-log" style="padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+                        刷新日志
+                      </button>
+                      <button id="clear-log" style="padding: 5px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        清空日志
+                      </button>
+                    </div>
+                  </div>
+                  <div id="chmlfrp-log" style="background-color: var(--secondary-bg); border: 1px solid #ddd; border-radius: 6px; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                    <p>日志将在这里显示...</p>
+                  </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h3><i class="bi bi-download"></i> Frpc下载</h3>
+                    <p>您可以从以下链接访问ChmlFrp官网下载适合您系统的客户端：</p>
+                    <a href="https://panel.chmlfrp.cn/tunnel/download" 
+                       target="_blank" class="btn btn-success" style="margin-top: 10px;">
+                        <i class="bi bi-globe"></i> 访问ChmlFrp官网下载
+                    </a>
+                    <p style="margin-top: 10px; color: #666;">提示：请根据您的操作系统类型(Windows/Linux/MacOS等)和硬件架构(amd64/arm64等)选择合适的版本下载。</p>
+                </div>
+            </div>
+        </section>
+        
         <!-- 空间管理部分 -->
         <section id="space" class="section-content">
             <div class="dashboard-card">
@@ -948,31 +1053,67 @@
         <section id="security" class="section-content">
             <div class="dashboard-card">
                 <h2><i class="bi bi-shield-lock"></i> 安全设置</h2>
+                
+                <!-- 极验验证设置 -->
+                <div class="security-section">
+                    <h3 style="margin-top: 20px; margin-bottom: 15px; font-size: 1.2rem;"><i class="bi bi-shield"></i> 极验验证配置</h3>
+                    <form id="captchaForm" class="config-form">
+                        <div class="form-group">
+                            <label for="geetestId">极验ID</label>
+                            <input type="text" class="form-control form-full" id="geetestId" name="geetest_id" 
+                                   value="{{ system_config.geetest_id or '' }}" placeholder="请输入极验ID">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="geetestKey">极验密钥</label>
+                            <input type="password" class="form-control form-full" id="geetestKey" name="geetest_key" 
+                                   value="{{ system_config.geetest_key or '' }}" placeholder="请输入极验密钥">
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="offlineDownloadEnabled" name="offline_download_enabled"
+                                       {% if system_config.offline_download_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="offlineDownloadEnabled">启用离线下载功能</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="btn-save">
+                                <i class="bi bi-save"></i> 保存极验设置
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
                 <!-- 更改密码表单 -->
-            <form method="POST" action="{{ url_for('admin_change_password') }}" class="password-form">
-                <div class="form-group">
-                    <label for="current_password">当前密码</label>
-                    <input type="password" id="current_password" name="current_password" required class="form-control">
+                <div class="security-section" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
+                    <h3 style="margin-bottom: 15px; font-size: 1.2rem;"><i class="bi bi-key"></i> 密码设置</h3>
+                    <form method="POST" action="{{ url_for('admin_change_password') }}" class="password-form">
+                        <div class="form-group">
+                            <label for="current_password">当前密码</label>
+                            <input type="password" id="current_password" name="current_password" required class="form-control">
+                        </div>
+                    
+                        <div class="form-group">
+                            <label for="new_password">新密码</label>
+                            <input type="password" id="new_password" name="new_password" required class="form-control">
+                        </div>
+                    
+                        <div class="form-group">
+                            <label for="confirm_password">确认新密码</label>
+                            <input type="password" id="confirm_password" name="confirm_password" required class="form-control">
+                        </div>
+                    
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-key"></i> 更改密码
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            
-                <div class="form-group">
-                    <label for="new_password">新密码</label>
-                    <input type="password" id="new_password" name="new_password" required class="form-control">
-                </div>
-            
-                <div class="form-group">
-                    <label for="confirm_password">确认新密码</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required class="form-control">
-                </div>
-            
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-key"></i> 更改密码
-                    </button>
-                </div>
-            </form>
-        </div>
-    </section>
+            </div>
+        </section>
         
         <!-- 网络配置部分 -->
         <section id="network" class="section-content">
@@ -1040,7 +1181,7 @@
                             {% endif %}
                         </div>
                         <div class="file-actions">
-                            <form method="POST" action="{{ url_for('api_delete_file') }}" onsubmit="return confirm('确定要删除这个文件吗？')">
+                            <form method="POST" action="{{ url_for('api_delete_file') }}" onsubmit="return false;">
                                 <input type="hidden" name="filename" value="{{ file.name }}">
                                 <button type="submit" class="delete-btn" title="删除文件">
                                     <i class="bi bi-trash"></i>
@@ -1076,7 +1217,7 @@
                     document.querySelectorAll('.section-content').forEach(section => {
                         section.classList.remove('active');
                         section.style.display = 'none';
-                    });
+                    });;
                     
                     // 设置当前活动状态
                     this.classList.add('active');
@@ -1116,14 +1257,14 @@
                 .then(response => response.json())
                 .then(result => {
                     if (result.status === 'success') {
-                        location.reload();
-                    } else {
-                        alert(`错误: ${result.message}`);
-                    }
+                                location.reload();
+                            } else {
+                                showMessage(`错误: ${result.message}`, 'error');
+                            }
                 })
                 .catch(error => {
                     console.error('配置更新失败:', error);
-                    alert('配置更新失败，请重试');
+                    showMessage('配置更新失败，请重试', 'error');
                 });
             });
             
@@ -1146,44 +1287,161 @@
                     if (result.status === 'success') {
                         location.reload();
                     } else {
-                        alert(`错误: ${result.message}`);
+                        showMessage(`错误: ${result.message}`, 'error');
                     }
                 })
                 .catch(error => {
                     console.error('配置更新失败:', error);
-                    alert('配置更新失败，请重试');
+                    showMessage('配置更新失败，请重试', 'error');
                 });
             });
+            
+            // 极验设置表单提交
+            document.getElementById('captchaForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData);
+                
+                // 发送请求
+                fetch('/api/update_config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showMessage('极验设置已保存', 'success');
+                    } else {
+                        showMessage('保存失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showMessage('保存失败: ' + error.message, 'error');
+                });
+            });
+            
+            // 显示消息
+            function showMessage(message, type) {
+                // 检查是否已存在消息容器
+                let flashContainer = document.getElementById('flashMessages');
+                if (!flashContainer) {
+                    flashContainer = document.createElement('div');
+                    flashContainer.className = 'flash-messages';
+                    flashContainer.id = 'flashMessages';
+                    flashContainer.style.position = 'fixed';
+                    flashContainer.style.top = '80px';
+                    flashContainer.style.right = '20px';
+                    flashContainer.style.zIndex = '2000';
+                    flashContainer.style.maxWidth = '400px';
+                    document.body.appendChild(flashContainer);
+                }
+                
+                const messageElement = document.createElement('div');
+                messageElement.className = `flash-message flash-${type}`;
+                messageElement.style.padding = '15px 20px';
+                messageElement.style.borderRadius = '6px';
+                messageElement.style.marginBottom = '10px';
+                messageElement.style.display = 'flex';
+                messageElement.style.alignItems = 'center';
+                messageElement.style.gap = '10px';
+                messageElement.style.animation = 'slideIn 0.3s ease-out';
+                
+                // 检查是否为深色模式
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                
+                if (isDarkMode) {
+                    // 深色模式下的样式
+                    if (type === 'success') {
+                        messageElement.style.backgroundColor = '#0f5132';
+                        messageElement.style.color = '#d4edda';
+                        messageElement.style.border = '1px solid #198754';
+                    } else if (type === 'error') {
+                        messageElement.style.backgroundColor = '#721c24';
+                        messageElement.style.color = '#f8d7da';
+                        messageElement.style.border = '1px solid #dc3545';
+                    } else if (type === 'warning') {
+                        messageElement.style.backgroundColor = '#856404';
+                        messageElement.style.color = '#fff3cd';
+                        messageElement.style.border = '1px solid #ffc107';
+                    } else {
+                        messageElement.style.backgroundColor = '#084298';
+                        messageElement.style.color = '#cfe2ff';
+                        messageElement.style.border = '1px solid #0d6efd';
+                    }
+                } else {
+                    // 浅色模式下的样式
+                    if (type === 'success') {
+                        messageElement.style.backgroundColor = '#d4edda';
+                        messageElement.style.color = '#155724';
+                        messageElement.style.border = '1px solid #c3e6cb';
+                    } else if (type === 'error') {
+                        messageElement.style.backgroundColor = '#f8d7da';
+                        messageElement.style.color = '#721c24';
+                        messageElement.style.border = '1px solid #f5c6cb';
+                    } else if (type === 'warning') {
+                        messageElement.style.backgroundColor = '#fff3cd';
+                        messageElement.style.color = '#856404';
+                        messageElement.style.border = '1px solid #ffeaa7';
+                    } else {
+                        messageElement.style.backgroundColor = '#cce7ff';
+                        messageElement.style.color = '#004085';
+                        messageElement.style.border = '1px solid #b8daff';
+                    }
+                }
+                
+                messageElement.innerHTML = `
+                    <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-exclamation-circle'}"></i>
+                    <span>${message}</span>
+                    <button class="btn-close" onclick="this.parentElement.remove()"></button>
+                `;
+                
+                flashContainer.appendChild(messageElement);
+                
+                // 3秒后自动移除
+                setTimeout(() => {
+                    if (messageElement.parentElement) {
+                        messageElement.remove();
+                    }
+                }, 3000);
+            }
             
             // 文件删除后自动刷新
             document.querySelectorAll('.file-actions form').forEach(form => {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     
-                    if (!confirm('确定要删除这个文件吗？')) return;
+                    const currentForm = this;
                     
-                    const formData = new FormData(this);
-                    const data = Object.fromEntries(formData.entries());
-                    
-                    fetch(this.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.status === 'success') {
-                            // 删除成功后刷新文件列表
-                            location.reload();
-                        } else {
-                            alert(`删除失败: ${result.message}`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('删除失败:', error);
-                        alert('删除失败，请重试');
+                    showConfirm('确定要删除这个文件吗？', function(confirmResult) {
+                        if (!confirmResult) return;
+                        
+                        const formData = new FormData(currentForm);
+                        const data = Object.fromEntries(formData.entries());
+                        
+                        fetch(currentForm.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.status === 'success') {
+                                // 删除成功后刷新文件列表
+                                location.reload();
+                            } else {
+                                showMessage(`删除失败: ${result.message}`, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('删除失败:', error);
+                            showMessage('删除失败，请重试', 'error');
+                        });
                     });
                 });
             });
@@ -1229,7 +1487,996 @@
                     bar.classList.add('high');
                 }
             });
+            
+            // 自动更新配置文件
+            document.getElementById('update-config-btn')?.addEventListener('click', function() {
+                showConfirm('确定要自动更新配置文件吗？这将重新加载最新的配置信息。', function(confirmResult) {
+                    if (!confirmResult) return;
+                    
+                    fetch('/api/update_config_auto', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Admin-Token': localStorage.getItem('admin_token')
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            showMessage('配置文件更新成功！', 'success');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1000);
+                        } else {
+                            showMessage('配置文件更新失败，请重试', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showMessage('网络错误，请重试', 'error');
+                    });
+                });
+            });
+            
+            // 一键重启服务
+            document.getElementById('restart-server-btn')?.addEventListener('click', function() {
+                showConfirm('确定要重启服务吗？这将导致服务短暂中断。', function(confirmResult) {
+                    if (!confirmResult) return;
+                    
+                    fetch('/api/restart_server', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Admin-Token': localStorage.getItem('admin_token')
+                        }
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            showMessage('服务正在重启，请等待片刻后刷新页面...', 'success');
+                            // 服务重启后可能需要等待一段时间再刷新
+                            setTimeout(() => {
+                                location.reload();
+                            }, 5000);
+                        } else {
+                            showMessage('服务重启失败，请重试', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        showMessage('网络错误，请重试', 'error');
+                    });
+                });
+            });
+            
+            // 查看系统日志
+            document.getElementById('view-system-log-btn')?.addEventListener('click', function() {
+                // 创建日志类型选择器
+                const logTypeSelector = document.createElement('div');
+                logTypeSelector.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <label for="log-type" style="margin-right: 10px;">日志类型：</label>
+                        <select id="log-type" style="padding: 5px;">
+                            <option value="system">系统日志</option>
+                            <option value="api">API日志</option>
+                            <option value="user">用户日志</option>
+                            <option value="frp">FRP日志</option>
+                        </select>
+                        <label for="log-days" style="margin-left: 20px; margin-right: 10px;">查看天数：</label>
+                        <select id="log-days" style="padding: 5px;">
+                            <option value="1">1天</option>
+                            <option value="3">3天</option>
+                            <option value="7">7天</option>
+                        </select>
+                        <button id="load-log-btn" style="padding: 5px 15px; margin-left: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">查看日志</button>
+                    </div>
+                    <div id="log-content" style="max-height: 60vh; overflow-y: auto;">请选择日志类型并点击查看</div>
+                `;
+                
+                showModal('系统日志', logTypeSelector);
+                
+                // 添加查看按钮点击事件
+                document.getElementById('load-log-btn').addEventListener('click', function() {
+                    const logType = document.getElementById('log-type').value;
+                    const logDays = document.getElementById('log-days').value;
+                    
+                    // 显示加载状态
+                    document.getElementById('log-content').textContent = '正在加载日志...';
+                    
+                    fetch(`/api/system_log?type=${logType}&days=${logDays}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-Admin-Token': localStorage.getItem('admin_token')
+                        }
+                    })
+                    .then(response => response.text())
+                    .then(log => {
+                        // 使用pre标签显示日志，但不设置特殊的字体颜色
+                        document.getElementById('log-content').innerHTML = `<pre style="max-height: 60vh; overflow-y: auto; white-space: pre-wrap; word-wrap: break-word;">${log}</pre>`;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('log-content').innerHTML = `<span style="color: red;">获取日志失败，请重试</span>`;
+                    });
+                });
+            });
+            
+            // 保存ChmlFrp配置
+            document.getElementById('save-chmlfrp-config')?.addEventListener('click', function() {
+                const token = document.getElementById('chmlfrp_token').value;
+                
+                if (!token) {
+                    showMessage('请输入用户Token', 'error');
+                    return;
+                }
+                
+                fetch('/api/update_chmlfrp_config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': localStorage.getItem('admin_token')
+                    },
+                    body: JSON.stringify({
+                        chmlfrp_token: token
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        showMessage('ChmlFrp配置保存成功！', 'success');
+                    } else {
+                        showMessage('ChmlFrp配置保存失败，请重试', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('网络错误，请重试', 'error');
+                });
+            });
+            
+            // 全局变量
+            let logRefreshInterval = null;
+            let logLines = [];
+            const MAX_LOG_LINES = 500;
+            
+            // 页面加载时检查ChmlFrp状态
+            document.addEventListener('DOMContentLoaded', function() {
+              checkChmlfrpStatus();
+            });
+            
+            // 检查ChmlFrp状态
+            function checkChmlfrpStatus() {
+                fetch('/api/check_chmlfrp_status', {
+                    method: 'GET',
+                    headers: {
+                        'X-Admin-Token': localStorage.getItem('admin_token')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById('chmlfrp-status');
+                    if (statusDiv) {
+                      if (data.success && data.data && data.data.status === 'running') {
+                        statusDiv.innerHTML = `
+                          <span><i class="bi bi-circle-fill" style="color: #28a745; margin-right: 5px;"></i></span>
+                          <span>ChmlFrp状态：运行中</span>
+                          <span style="margin-left: 10px; font-size: 12px; color: #6c757d;">隧道ID: ${data.data.tunnel_id || 'unknown'}</span>
+                          <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            检查状态
+                          </button>
+                        `;
+                        // 如果有活跃隧道，更新window.activeTunnel
+                        if (data.data.tunnel_id) {
+                          window.activeTunnel = data.data.tunnel_id;
+                          // 加载隧道列表并高亮显示当前活跃的隧道
+                          const loadTunnelBtn = document.getElementById('load-tunnel-list');
+                          if (loadTunnelBtn && !loadTunnelBtn.disabled) {
+                            loadTunnelBtn.click();
+                          }
+                        }
+                      } else {
+                        statusDiv.innerHTML = `
+                          <span><i class="bi bi-circle-fill" style="color: #dc3545; margin-right: 5px;"></i></span>
+                          <span>ChmlFrp状态：未运行</span>
+                          <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            检查状态
+                          </button>
+                        `;
+                      }
+                      // 重新绑定事件
+                      document.getElementById('check-chmlfrp-status')?.addEventListener('click', checkChmlfrpStatus);
+                    }
+                })
+                .catch(error => {
+                    console.error('检查ChmlFrp状态失败:', error);
+                    const statusDiv = document.getElementById('chmlfrp-status');
+                    if (statusDiv) {
+                      statusDiv.innerHTML = `
+                        <span><i class="bi bi-circle-fill" style="color: #ffc107; margin-right: 5px;"></i></span>
+                        <span>ChmlFrp状态：检查失败</span>
+                        <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                          重试
+                        </button>
+                      `;
+                      // 重新绑定事件
+                      document.getElementById('check-chmlfrp-status')?.addEventListener('click', checkChmlfrpStatus);
+                    }
+                });
+            }
+            
+            // 绑定检查状态按钮事件
+            document.getElementById('check-chmlfrp-status')?.addEventListener('click', checkChmlfrpStatus);
+            
+            // 加载隧道列表
+            document.getElementById('load-tunnel-list')?.addEventListener('click', function() {
+                const token = document.getElementById('chmlfrp_token').value;
+                
+                if (!token) {
+                    showMessage('请先输入ChmlFrp Token', 'error');
+                    return;
+                }
+                
+                const tunnelList = document.getElementById('tunnel-list');
+                tunnelList.innerHTML = '<div class="loading-state"><p>正在加载隧道列表...</p></div>';
+                
+                fetch('/api/check_chmlfrp_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': localStorage.getItem('admin_token')
+                    },
+                    body: JSON.stringify({
+                        token: token
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('加载失败');
+                    }
+                })
+                .then(data => {
+                    // 添加调试信息
+                    console.log('API响应数据:', data);
+                    
+                    tunnelList.innerHTML = '';
+                    
+                    // 检查是否有隧道数据
+                    let tunnelData = [];
+                    if (data.tunnels && Array.isArray(data.tunnels)) {
+                        // 使用简化格式：tunnels 数组
+                        tunnelData = data.tunnels;
+                    } else if (data.tunnel_list && data.tunnel_list.data && Array.isArray(data.tunnel_list.data)) {
+                        // 兼容旧格式：tunnel_list.data 数组
+                        tunnelData = data.tunnel_list.data;
+                    }
+                    
+                    if (tunnelData.length > 0) {
+                        // 显示用户信息
+                        if (data.user_info && data.user_info.data) {
+                            const userInfo = data.user_info.data;
+                            const userInfoCard = document.createElement('div');
+                            userInfoCard.className = 'user-info-card';
+                            userInfoCard.style.padding = '15px';
+                            userInfoCard.style.backgroundColor = 'var(--secondary-bg)';
+                            userInfoCard.style.borderRadius = '6px';
+                            userInfoCard.style.marginBottom = '20px';
+                            userInfoCard.style.display = 'flex';
+                            userInfoCard.style.alignItems = 'center';
+                            userInfoCard.style.gap = '15px';
+                            
+                            userInfoCard.innerHTML = `
+                                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background-color: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                    ${userInfo.username ? userInfo.username.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                <div>
+                                    <h4 style="margin: 0;">用户: ${userInfo.username || '未知'}</h4>
+                                    <p style="margin: 5px 0; font-size: 14px;">等级: ${userInfo.usergroup || '免费用户'}</p>
+                                    <p style="margin: 0; font-size: 14px;">剩余积分: ${userInfo.integral || 0}</p>
+                                </div>
+                            `;
+                            
+                            tunnelList.appendChild(userInfoCard);
+                        }
+                        
+                        // 显示隧道列表
+                        const tunnelGrid = document.createElement('div');
+                        tunnelGrid.style.display = 'grid';
+                        tunnelGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                        tunnelGrid.style.gap = '15px';
+                        tunnelGrid.style.marginBottom = '20px';
+                        
+                        tunnelData.forEach(tunnel => {
+                            const tunnelCard = document.createElement('div');
+                            tunnelCard.className = 'tunnel-card';
+                            tunnelCard.dataset.tunnelId = tunnel.id;
+                            tunnelCard.dataset.tunnelName = tunnel.name || tunnel.id;
+                            tunnelCard.dataset.tunnelType = tunnel.type || 'tcp';
+                            tunnelCard.dataset.localIp = tunnel.localip || tunnel.local_ip || '127.0.0.1';
+                            tunnelCard.dataset.localPort = tunnel.dorp || tunnel.local_port || '5000';
+                            if (tunnel.nport || tunnel.remote_port) tunnelCard.dataset.remotePort = tunnel.nport || tunnel.remote_port;
+                            
+                            // 设置样式
+                            tunnelCard.style.padding = '15px';
+                            tunnelCard.style.backgroundColor = 'var(--secondary-bg)';
+                            tunnelCard.style.border = '1px solid #ddd';
+                            tunnelCard.style.borderRadius = '6px';
+                            tunnelCard.style.cursor = 'pointer';
+                            tunnelCard.style.transition = 'all 0.3s ease';
+                            
+                            // 检查是否已有隧道在运行，如果有，禁用其他隧道的点击事件
+                            if (window.activeTunnel && window.activeTunnel !== tunnel.id) {
+                                tunnelCard.style.opacity = '0.6';
+                                tunnelCard.style.cursor = 'not-allowed';
+                            }
+                            
+                            // 隧道状态颜色
+                            const stateColor = tunnel.state === 'true' || tunnel.state === true ? '#28a745' : '#dc3545';
+                            const nodeStateColor = tunnel.nodestate === 'online' ? '#28a745' : '#6c757d';
+                            
+                            tunnelCard.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                    <h4 style="margin: 0;">${tunnel.name || tunnel.id}</h4>
+                                    <span style="background-color: ${stateColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                                        ${tunnel.state === 'true' || tunnel.state === true ? '在线' : '离线'}
+                                    </span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
+                                    <div>
+                                        <span style="color: #666;">类型:</span> ${tunnel.type || '获取失败'}
+                                    </div>
+                                    <div>
+                                        <span style="color: #666;">节点:</span> <span style="color: ${nodeStateColor};">${tunnel.node || '获取失败'}</span>
+                                    </div>
+                                    <div>
+                                        <span style="color: #666;">本地IP:</span> ${tunnel.localip || tunnel.local_ip || '获取失败'}
+                                    </div>
+                                    <div>
+                                        <span style="color: #666;">本地端口:</span> ${tunnel.dorp || tunnel.local_port || '获取失败'}
+                                    </div>
+                                    <div style="grid-column: 1 / -1;">
+                                        <span style="color: #666;">远程地址:</span> ${tunnel.ip || 'unknown'}:${tunnel.nport || tunnel.remote_port || 'unknown'}
+                                    </div>
+                                </div>
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <div>入站流量: ${formatTraffic(tunnel.today_traffic_in || 0)}</div>
+                                        <div>出站流量: ${formatTraffic(tunnel.today_traffic_out || 0)}</div>
+                                    </div>
+                                    ${tunnel.uptime ? `<div style="margin-top: 4px;">创建时间: ${formatDate(tunnel.uptime)}</div>` : ''}
+                                </div>
+                            `;
+                            
+                            tunnelCard.addEventListener('click', function() {
+                                // 移除其他卡片的选中状态
+                                document.querySelectorAll('.tunnel-card').forEach(card => {
+                                    card.style.borderColor = '#ddd';
+                                    card.style.boxShadow = 'none';
+                                });
+                                // 添加当前卡片的选中状态
+                                this.style.borderColor = '#007bff';
+                                this.style.boxShadow = '0 0 0 2px rgba(0, 123, 255, 0.25)';
+                                
+                                // 更新选中隧道信息
+                                const tunnelName = this.dataset.tunnelName;
+                                const tunnelType = this.dataset.tunnelType;
+                                const localIp = this.dataset.localIp;
+                                const localPort = this.dataset.localPort;
+                                const remotePort = this.dataset.remotePort;
+                                
+                                const selectedTunnelInfo = document.getElementById('selected-tunnel-info');
+                                selectedTunnelInfo.innerHTML = `
+                                    <h4 style="margin-top: 0;">选中的隧道</h4>
+                                    <p><strong>节点:</strong> ${tunnel.node}</p>
+                                    <p><strong>隧道名称:</strong> ${tunnelName}</p>
+                                    <p><strong>隧道类型:</strong> ${tunnelType}</p>
+                                    <p><strong>本地IP:</strong> ${localIp}</p>
+                                    <p><strong>本地端口:</strong> ${localPort}</p>
+                                    ${remotePort ? `<p><strong>远程端口:</strong> ${remotePort}</p>` : ''}
+                                `;
+                                
+                                // 禁用生成配置按钮和启动隧道按钮
+                                document.getElementById('generate-frpc-config').disabled = false;
+                                document.getElementById('start-tunnel').disabled = false;
+                                
+                                // 如果有隧道正在运行且不是当前选中的隧道，则禁用当前隧道的选择
+                                if (window.activeTunnel && window.activeTunnel !== tunnel.id) {
+                                    this.style.opacity = '0.6';
+                                    this.style.cursor = 'not-allowed';
+                                    document.getElementById('start-tunnel').disabled = true;
+                                }
+                            });
+                            
+                            tunnelGrid.appendChild(tunnelCard);
+                        });
+                        
+                        tunnelList.appendChild(tunnelGrid);
+                    } else {
+                        tunnelList.innerHTML = `
+                            <div class="no-tunnels">
+                                <p>未找到已创建的隧道</p>
+                                <button id="create-tunnel-guide" style="margin-top: 10px; padding: 8px 16px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    查看创建隧道指南
+                                </button>
+                            </div>
+                        `;
+                        
+                        // 添加指南按钮事件
+                        document.getElementById('create-tunnel-guide')?.addEventListener('click', function() {
+                            showModal('创建隧道指南', `
+                                <ol style="text-align: left;">
+                                    <li>访问 ChmlFrp 官方网站</li>
+                                    <li>注册并登录账号</li>
+                                    <li>创建新的隧道配置</li>
+                                    <li>获取隧道的 Token 信息</li>
+                                    <li>在本页面输入 Token 并刷新列表</li>
+                                </ol>
+                                <p style="margin-top: 15px;">注意：创建隧道可能需要消耗积分，请确保您的账号有足够积分。</p>
+                            `, 'html');
+                        });
+                    }
+                    
+                    showMessage('隧道列表加载成功', 'success');
+                })
+                .catch(error => {
+                    console.error('加载隧道列表错误:', error);
+                    tunnelList.innerHTML = `
+                        <div class="error-state">
+                            <p>加载隧道列表失败</p>
+                            <p style="font-size: 14px; color: #666;">${error.message || '未知错误'}</p>
+                            <button onclick="document.getElementById('load-tunnel-list').click()" style="margin-top: 10px; padding: 8px 16px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                重试
+                            </button>
+                        </div>
+                    `;
+                    showMessage('加载隧道列表失败', 'error');
+                });
+            });
+            
+            // 启动隧道
+                    document.getElementById('start-tunnel')?.addEventListener('click', function() {
+                        // 检查是否已有隧道在运行
+                        if (window.activeTunnel) {
+                            showMessage('已有隧道在运行，请先停止当前隧道', 'error');
+                            return;
+                        }
+                        
+                        // 获取选中的隧道卡片
+                        let selectedTunnel = null;
+                        const tunnelCards = document.querySelectorAll('.tunnel-card');
+                        for (let i = 0; i < tunnelCards.length; i++) {
+                            if (tunnelCards[i].style.borderColor === 'rgb(0, 123, 255)' || 
+                                tunnelCards[i].style.borderColor === '#007bff') {
+                                selectedTunnel = tunnelCards[i];
+                                break;
+                            }
+                        }
+                        
+                        if (!selectedTunnel) {
+                            showMessage('请先选择一个隧道', 'error');
+                            return;
+                        }
+                        
+                        const token = document.getElementById('chmlfrp_token').value;
+                        const tunnelId = selectedTunnel.dataset.tunnelId;
+                        const tunnelName = selectedTunnel.dataset.tunnelName;
+                        
+                        if (!token) {
+                            showMessage('请先输入ChmlFrp Token', 'error');
+                            return;
+                        }
+                        
+                        // 显示加载状态
+                        const originalText = this.textContent;
+                        this.textContent = '启动中...';
+                        this.disabled = true;
+                
+                fetch('/api/start_chmlfrp_tunnel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': localStorage.getItem('admin_token')
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        tunnel_id: tunnelId,
+                        tunnel_name: tunnelName
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('启动失败');
+                    }
+                })
+                .then(data => {
+                            if (data.success) {
+                                showMessage('隧道启动成功', 'success');
+                                // 禁用启动按钮，启用停止按钮
+                                this.disabled = true;
+                                document.getElementById('stop-tunnel').disabled = false;
+                                
+                                // 设置活跃隧道状态
+                                window.activeTunnel = tunnelId;
+                                
+                                // 禁用其他隧道的选择
+                                tunnelCards.forEach(card => {
+                                    if (card.dataset.tunnelId !== tunnelId) {
+                                        card.style.opacity = '0.6';
+                                        card.style.cursor = 'not-allowed';
+                                    }
+                                });
+                                
+                                // 显示日志容器
+                                const logContainer = document.getElementById('chmlfrp-log-container');
+                                if (logContainer) {
+                                    logContainer.style.display = 'block';
+                                    // 加载并显示初始日志
+                                    loadChmlfrpLog();
+                                    // 开始自动刷新日志
+                                    startLogRefresh();
+                                }
+                            } else {
+                                showMessage('隧道启动失败: ' + data.message, 'error');
+                            }
+                        })
+                .catch(error => {
+                    console.error('启动隧道错误:', error);
+                    showMessage('启动隧道失败: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    // 恢复按钮状态
+                    this.textContent = originalText;
+                    this.disabled = false;
+                });
+            });
+            
+            // 加载ChmlFrp日志
+            function loadChmlfrpLog() {
+              fetch('/api/get_chmlfrp_log', {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Admin-Token': localStorage.getItem('admin_token')
+                }
+              })
+              .then(response => response.text())
+              .then(logContent => {
+                const logElement = document.getElementById('chmlfrp-log');
+                if (logElement) {
+                  logElement.textContent = logContent || '暂无日志内容';
+                  // 滚动到底部
+                  logElement.scrollTop = logElement.scrollHeight;
+                }
+              })
+              .catch(error => {
+                console.error('加载ChmlFrp日志失败:', error);
+                const logElement = document.getElementById('chmlfrp-log');
+                if (logElement) {
+                  logElement.textContent = '加载日志失败，请稍后重试';
+                }
+              });
+            }
+            
+            // 开始日志自动刷新
+            function startLogRefresh() {
+              if (logRefreshInterval) {
+                clearInterval(logRefreshInterval);
+              }
+              // 每3秒刷新一次日志
+              logRefreshInterval = setInterval(loadChmlfrpLog, 3000);
+            }
+            
+            // 停止日志自动刷新
+            function stopLogRefresh() {
+              if (logRefreshInterval) {
+                clearInterval(logRefreshInterval);
+                logRefreshInterval = null;
+              }
+            }
+            
+            // 绑定日志相关按钮事件
+            document.getElementById('refresh-log')?.addEventListener('click', loadChmlfrpLog);
+            document.getElementById('clear-log')?.addEventListener('click', function() {
+              const logElement = document.getElementById('chmlfrp-log');
+              if (logElement) {
+                logElement.textContent = '日志已清空';
+              }
+              // 请求服务器清空日志
+              fetch('/api/clear_chmlfrp_log', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Admin-Token': localStorage.getItem('admin_token')
+                }
+              }).catch(error => {
+                console.error('清空ChmlFrp日志失败:', error);
+              });
+            });
+            
+            // 停止隧道
+                    document.getElementById('stop-tunnel')?.addEventListener('click', function() {
+                        // 显示加载状态
+                        const originalText = this.textContent;
+                        this.textContent = '停止中...';
+                        this.disabled = true;
+                        
+                        fetch('/api/stop_chmlfrp_tunnel', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Admin-Token': localStorage.getItem('admin_token')
+                            }
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            } else {
+                                throw new Error('停止失败');
+                            }
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                showMessage('隧道已停止', 'success');
+                                // 禁用停止按钮，启用启动按钮
+                                this.disabled = true;
+                                document.getElementById('start-tunnel').disabled = false;
+                                
+                                // 清除活跃隧道状态
+                                window.activeTunnel = null;
+                                
+                                // 启用所有隧道的选择
+                                const tunnelCards = document.querySelectorAll('.tunnel-card');
+                                tunnelCards.forEach(card => {
+                                    card.style.opacity = '1';
+                                    card.style.cursor = 'pointer';
+                                    card.style.borderColor = '#ddd';
+                                    card.style.boxShadow = 'none';
+                                });
+                                
+                                // 隐藏日志容器
+                                const logContainer = document.getElementById('chmlfrp-log-container');
+                                if (logContainer) {
+                                    logContainer.style.display = 'none';
+                                }
+                                // 停止日志自动刷新
+                                stopLogRefresh();
+                            } else {
+                                showMessage('隧道停止失败: ' + data.message, 'error');
+                            }
+                        })
+                .catch(error => {
+                    console.error('停止隧道错误:', error);
+                    showMessage('停止隧道失败: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    // 恢复按钮状态
+                    this.textContent = originalText;
+                });
+            });
+            
+            // 原有的生成frpc.ini配置文件代码开始
+            document.getElementById('generate-frpc-config')?.addEventListener('click', function() {
+                const token = document.getElementById('chmlfrp_token').value;
+                
+                // 查找选中的隧道卡片
+                let selectedTunnel = null;
+                const tunnelCards = document.querySelectorAll('.tunnel-card');
+                for (let i = 0; i < tunnelCards.length; i++) {
+                    if (tunnelCards[i].style.borderColor === 'rgb(0, 123, 255)' || 
+                        tunnelCards[i].style.borderColor === '#007bff') {
+                        selectedTunnel = tunnelCards[i];
+                        break;
+                    }
+                }
+                
+                if (!selectedTunnel) {
+                    showMessage('请先选择一个隧道', 'error');
+                    return;
+                }
+                
+                const tunnelId = selectedTunnel.dataset.tunnelId;
+                const tunnelName = selectedTunnel.dataset.tunnelName;
+                
+                // 显示加载状态
+                const originalText = this.textContent;
+                this.textContent = '生成中...';
+                this.disabled = true;
+                
+                fetch('/api/get_chmlfrp_tunnel_config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Admin-Token': localStorage.getItem('admin_token')
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        tunnel_id: tunnelId,
+                        tunnel_name: tunnelName
+                    })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        return response.text().then(text => {
+                            throw new Error(text);
+                        });
+                    }
+                })
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        setTimeout(() => {
+                            showModal('快捷启动指南', `
+                                <div style="text-align: left;">
+                                    <h4>如何使用快捷启动命令</h4>
+                                    <p><strong>Windows系统：</strong></p>
+                                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                                        <code>${data.commands.windows}</code>
+                                    </div>
+                                    <p><strong>Linux/MacOS系统：</strong></p>
+                                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0;">
+                                        <code>${data.commands.linux_macos}</code>
+                                    </div>
+                                    <ol style="margin-top: 15px;">
+                                        <li>从ChmlFrp官网下载适合您系统的frpc客户端程序</li>
+                                        <li><strong>重要：</strong>将下载的frpc程序（Windows为frpc.exe，Linux/MacOS为frpc）放置到FileSharePlatform根目录下自动创建的<strong>chmlfrp</strong>文件夹中</li>
+                                        <li>根据您的操作系统，复制并执行对应的快捷启动命令</li>
+                                        <li>查看程序输出，确认隧道连接成功</li>
+                                    </ol>
+                                    <div style="margin-top: 15px; padding: 10px; background-color: #e3f2fd; border-radius: 5px;">
+                                        <p style="margin: 0;"><i class="bi bi-info-circle"></i> <strong>系统会自动创建chmlfrp目录</strong>，您只需将下载的frpc程序放入该目录即可。程序启动后，所有frpc相关日志将被记录到系统日志中。</p>
+                                    </div>
+                                    <p style="margin-top: 15px; color: #666;">
+                                        成功连接后，您可以通过远程地址访问本地服务。
+                                    </p>
+                                </div>
+                            `, 'html');
+                        }, 500);
+                    } else {
+                        showMessage('生成快捷启动命令失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('生成配置文件错误:', error);
+                    showMessage('生成配置文件失败：' + error.message, 'error');
+                })
+                .finally(() => {
+                    // 恢复按钮状态
+                    this.textContent = originalText;
+                    this.disabled = false;
+                });
+            });
+            
+            // 辅助函数：格式化流量显示
+            function formatTraffic(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // 辅助函数：格式化日期显示
+            function formatDate(dateString) {
+                try {
+                    const date = new Date(dateString);
+                    return date.toLocaleString('zh-CN');
+                } catch (e) {
+                    return dateString;
+                }
+            }
         });
+        
+        // 模态窗口功能
+        function showModal(title, content, type = 'text') {
+            const modal = document.getElementById('modal-window');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+            const modalClose = document.getElementById('modal-close');
+            
+            // 设置模态窗口内容
+            modalTitle.textContent = title;
+            
+            if (type === 'text') {
+                modalContent.innerHTML = '<pre>' + content + '</pre>';
+                modalContent.style.whiteSpace = 'pre-wrap';
+            } else if (type === 'html') {
+                modalContent.innerHTML = content;
+                modalContent.style.whiteSpace = '';
+            }
+            
+            // 显示模态窗口
+            modal.style.display = 'block';
+            
+            // 点击关闭按钮或模态窗口外部关闭
+            modalClose.onclick = function() {
+                modal.style.display = 'none';
+            }
+            
+            window.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+        
+        // 确认对话框
+        function showConfirm(message, callback) {
+            const confirmModal = document.getElementById('confirm-modal');
+            const confirmMessage = document.getElementById('confirm-message');
+            const confirmYes = document.getElementById('confirm-yes');
+            const confirmNo = document.getElementById('confirm-no');
+            
+            confirmMessage.textContent = message;
+            confirmModal.style.display = 'block';
+            
+            // 移除之前的事件监听器
+            const newYes = confirmYes.cloneNode(true);
+            confirmYes.parentNode.replaceChild(newYes, confirmYes);
+            
+            const newNo = confirmNo.cloneNode(true);
+            confirmNo.parentNode.replaceChild(newNo, confirmNo);
+            
+            // 添加新的事件监听器
+            newYes.onclick = function() {
+                confirmModal.style.display = 'none';
+                if (callback) callback(true);
+            }
+            
+            newNo.onclick = function() {
+                confirmModal.style.display = 'none';
+                if (callback) callback(false);
+            }
+        }
+        
+        // 替换查看系统日志的window.open调用
+        document.getElementById('view-system-log-btn')?.addEventListener('click', function() {
+            fetch('/api/system_log', {
+                method: 'GET',
+                headers: {
+                    'X-Admin-Token': localStorage.getItem('admin_token')
+                }
+            })
+            .then(response => response.text())
+            .then(log => {
+                showModal('系统日志', log);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('获取日志失败，请重试', 'error');
+            });
+        });
+        
+        // 替换所有alert调用为showMessage
+        window.alert = function(message) {
+            showMessage(message, 'info');
+        };
+        
+        // 替换所有confirm调用为showConfirm
+        window.confirm = function(message) {
+            // 注意：这是一个同步函数，而showConfirm是异步的
+            // 在现代浏览器中，这种同步阻塞已不推荐使用
+            // 但为了兼容性，我们这里简单实现
+            let result = false;
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            modal.style.zIndex = '9999';
+            modal.style.display = 'flex';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+            modal.style.fontFamily = 'sans-serif';
+            
+            const dialog = document.createElement('div');
+            dialog.style.backgroundColor = '#fff';
+            dialog.style.padding = '20px';
+            dialog.style.borderRadius = '5px';
+            dialog.style.minWidth = '300px';
+            dialog.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+            
+            const messageEl = document.createElement('p');
+            messageEl.textContent = message;
+            messageEl.style.marginBottom = '15px';
+            
+            const buttons = document.createElement('div');
+            buttons.style.display = 'flex';
+            buttons.style.justifyContent = 'flex-end';
+            buttons.style.gap = '10px';
+            
+            const noBtn = document.createElement('button');
+            noBtn.textContent = '取消';
+            noBtn.style.padding = '5px 15px';
+            noBtn.style.border = '1px solid #ccc';
+            noBtn.style.borderRadius = '3px';
+            noBtn.style.backgroundColor = '#fff';
+            noBtn.style.cursor = 'pointer';
+            noBtn.onclick = function() {
+                document.body.removeChild(modal);
+                result = false;
+                // 使用同步方式处理
+                window.confirmResult = result;
+            };
+            
+            const yesBtn = document.createElement('button');
+            yesBtn.textContent = '确定';
+            yesBtn.style.padding = '5px 15px';
+            yesBtn.style.border = '1px solid #ccc';
+            yesBtn.style.borderRadius = '3px';
+            yesBtn.style.backgroundColor = '#f0f0f0';
+            yesBtn.style.cursor = 'pointer';
+            yesBtn.onclick = function() {
+                document.body.removeChild(modal);
+                result = true;
+                // 使用同步方式处理
+                window.confirmResult = result;
+            };
+            
+            buttons.appendChild(yesBtn);
+            buttons.appendChild(noBtn);
+            dialog.appendChild(messageEl);
+            dialog.appendChild(buttons);
+            modal.appendChild(dialog);
+            document.body.appendChild(modal);
+            
+            // 等待用户点击
+            // 这是一个简单的实现，在实际应用中可能需要更复杂的处理
+            while (modal.parentNode) {
+                // 这里会阻塞主线程，不推荐使用
+                // 但为了兼容性，我们暂时这样实现
+            }
+            
+            return result;
+        };
     </script>
+    
+    <!-- 模态窗口HTML结构 -->
+    <div id="modal-window" class="modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div class="modal-content-wrapper" style="background-color: #fefefe; margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 800px; max-height: 80vh; overflow-y: auto; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <h2 id="modal-title" style="margin: 0; font-size: 1.2em; color: #333;"></h2>
+                <button id="modal-close" style="background: none; border: none; font-size: 1.5em; cursor: pointer; color: #aaa; hover:color: #000;">×</button>
+            </div>
+            <div id="modal-content" style="font-family: monospace; font-size: 0.9em; line-height: 1.4;"></div>
+        </div>
+    </div>
+    
+    <!-- 确认对话框HTML结构 -->
+    <div id="confirm-modal" class="confirm-modal" style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+        <div class="confirm-content-wrapper" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 300px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+            <p id="confirm-message" style="margin-bottom: 20px;"></p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button id="confirm-yes" style="padding: 8px 16px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">确定</button>
+                <button id="confirm-no" style="padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        /* 深色模式下的弹窗样式 */
+        body.dark-mode .modal-content-wrapper {
+            background-color: var(--dark-card);
+            color: var(--dark-text);
+            border-color: var(--dark-border);
+        }
+        
+        body.dark-mode .modal-content-wrapper h2 {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .confirm-content-wrapper {
+            background-color: var(--dark-card);
+            color: var(--dark-text);
+            border-color: var(--dark-border);
+        }
+        
+        body.dark-mode #confirm-no {
+            background-color: var(--dark-border);
+        }
+    </style>
 </body>
 </html>

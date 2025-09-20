@@ -28,6 +28,7 @@ import concurrent
 import concurrent.futures
 import math
 import uuid
+from datetime import datetime
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -37,6 +38,8 @@ import zipfile
 from datetime import datetime, timedelta
 import re
 import hmac
+import logging
+from logging.handlers import RotatingFileHandler
 
 
 # ==============================================
@@ -49,12 +52,155 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from flask import Flask, render_template, send_from_directory, request, jsonify, abort, session, redirect, url_for, flash
 
+# ============================================== 
+# 自定义模块导入 
+# ==============================================
+
+# 日志功能
+# 日志目录
+LOG_DIR = 'log'
+
+# 确保日志目录存在
+os.makedirs(LOG_DIR, exist_ok=True)
+
+# 创建日志器
+system_logger = logging.getLogger('system')
+system_logger.setLevel(logging.INFO)
+
+api_logger = logging.getLogger('api')
+api_logger.setLevel(logging.INFO)
+
+user_logger = logging.getLogger('user')
+user_logger.setLevel(logging.INFO)
+
+# 创建格式化器
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# 为系统日志创建处理器
+system_log_file = os.path.join(LOG_DIR, f'system_{datetime.today().date().strftime('%Y%m%d')}.log')
+system_handler = RotatingFileHandler(
+    system_log_file,
+    maxBytes=5*1024*1024,  # 5MB
+    backupCount=5
+)
+system_handler.setFormatter(formatter)
+system_logger.addHandler(system_handler)
+
+# 为API日志创建处理器
+api_log_file = os.path.join(LOG_DIR, f'api_{datetime.today().date().strftime('%Y%m%d')}.log')
+api_handler = RotatingFileHandler(
+    api_log_file,
+    maxBytes=5*1024*1024,  # 5MB
+    backupCount=5
+)
+api_handler.setFormatter(formatter)
+api_logger.addHandler(api_handler)
+
+# 为用户操作日志创建处理器
+user_log_file = os.path.join(LOG_DIR, f'user_{datetime.today().date().strftime('%Y%m%d')}.log')
+user_handler = RotatingFileHandler(
+    user_log_file,
+    maxBytes=5*1024*1024,  # 5MB
+    backupCount=5
+)
+user_handler.setFormatter(formatter)
+user_logger.addHandler(user_handler)
+
+# 添加控制台输出
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+system_logger.addHandler(console_handler)
+
+# 日志记录函数
+def log_system(event, level='info'):
+    """记录系统事件日志"""
+    if level.lower() == 'debug':
+        system_logger.debug(event)
+    elif level.lower() == 'warning':
+        system_logger.warning(event)
+    elif level.lower() == 'error':
+        system_logger.error(event)
+    else:
+        system_logger.info(event)
+
+def log_api(endpoint, method, status_code, ip=None):
+    """记录API请求日志"""
+    message = f"{method} {endpoint} - {status_code}"
+    if ip:
+        message += f" - IP: {ip}"
+    api_logger.info(message)
+
+# frp日志记录器
+frp_logger = logging.getLogger('frp')
+frp_logger.setLevel(logging.INFO)
+frp_handler = logging.FileHandler(os.path.join(LOG_DIR, f'frp_{datetime.today().date().strftime('%Y%m%d')}.log'), encoding='utf-8')
+frp_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', '%Y-%m-%d %H:%M:%S')
+frp_handler.setFormatter(frp_formatter)
+frp_logger.addHandler(frp_handler)
+
+# 添加控制台输出
+if console_handler:
+    frp_logger.addHandler(console_handler)
+
+def log_frp(event, level='info'):
+    """记录frp相关日志"""
+    if level.lower() == 'debug':
+        frp_logger.debug(event)
+    elif level.lower() == 'warning':
+        frp_logger.warning(event)
+    elif level.lower() == 'error':
+        frp_logger.error(event)
+    else:
+        frp_logger.info(event)
+
+def log_user(username, action, details=None):
+    """记录用户操作日志"""
+    message = f"{username} - {action}"
+    if details:
+        message += f" - {details}"
+    user_logger.info(message)
+
+def get_logs(log_type='system', days=1):
+    """获取指定类型和天数的日志"""
+    logs = []
+    encodings = ['utf-8', 'gbk', 'latin-1']  # 尝试多种编码
+    
+    for i in range(days):
+        date = (datetime.today() - timedelta(days=i)).strftime('%Y%m%d')
+        log_file = os.path.join(LOG_DIR, f'{log_type}_{date}.log')
+        
+        if os.path.exists(log_file):
+            file_read = False
+            # 尝试多种编码
+            for encoding in encodings:
+                try:
+                    with open(log_file, 'r', encoding=encoding) as f:
+                        logs_content = f.readlines()
+                    logs.extend(logs_content)
+                    file_read = True
+                    break  # 成功读取后跳出循环
+                except UnicodeDecodeError:
+                    continue  # 尝试下一种编码
+                except Exception as e:
+                    logs.append(f"读取日志文件 {log_file} 时出错: {str(e)}")
+                    break
+            
+            # 如果所有编码都失败，使用replace模式
+            if not file_read:
+                try:
+                    with open(log_file, 'r', encoding='utf-8', errors='replace') as f:
+                        logs.extend(f.readlines())
+                except Exception as e:
+                    logs.append(f"无法读取日志文件 {log_file}: {str(e)}")
+    
+    return ''.join(logs)
+
 # PyPDF库导入
 try:
     import pypdf
 except ImportError:
     print("PyPDF库未安装,请运行 'pip install PyPDF' 安装")
-    PyPDF = None
+    pypdf = None
 
 # 确保JSONDecodeError可用
 try:
@@ -73,6 +219,27 @@ if not hasattr(json, 'JSONDecodeError'):
 # Flask应用实例
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # 添加密钥用于session管理
+
+# 自定义函数：获取用户真实IP地址
+def get_real_ip():
+    """
+    获取用户的真实IP地址
+    优先从X-Real-IP请求头中获取，如果不存在则使用request.remote_addr
+    """
+    # 优先从X-Real-IP请求头获取真实IP
+    real_ip = request.headers.get('X-Real-IP')
+    if real_ip:
+        return real_ip
+    
+    # 如果X-Real-IP不存在，尝试从X-Forwarded-For中获取
+    x_forwarded_for = request.headers.get('X-Forwarded-For')
+    if x_forwarded_for:
+        # X-Forwarded-For可能包含多个IP地址，取第一个
+        real_ip = x_forwarded_for.split(',')[0].strip()
+        return real_ip
+    
+    # 如果以上都不存在，则返回默认的remote_addr
+    return request.remote_addr
 
 # 线程锁 - 用于确保文件操作的线程安全
 upload_lock = threading.Lock()
@@ -189,6 +356,19 @@ def init_system():
                 for key in saved_config:
                     if key in system_config:
                         system_config[key] = saved_config[key]
+                
+            # 检测并添加缺少的配置项
+            missing_configs = {}
+            for key, value in DEFAULT_CONFIG.items():
+                if key not in saved_config:
+                    missing_configs[key] = value
+                    system_config[key] = value
+                    
+            if missing_configs:
+                print(f"检测到缺少的配置项: {missing_configs}")
+                # 保存更新后的配置
+                save_config()
+                print("配置已自动更新，添加了缺少的配置项")
         except Exception as e:
             print(f"配置加载错误: {e}")
     
@@ -210,8 +390,50 @@ def save_config():
     try:
         with open(CONFIG_FILE,'w', encoding='utf_8') as f:  # 使用utf_8编码保存
             json.dump(system_config,f,indent=4,ensure_ascii=False)
+        log_system('配置保存成功')
     except Exception as e:
+        log_system(f"配置保存失败: {str(e)}", 'error')
         print(f"配置保存失败: {e}")
+
+def load_config():
+    """从配置文件加载配置"""
+    global system_config
+    try:
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r', encoding='utf_8') as f:
+                saved_config = json.load(f)
+                # 先创建一个默认配置的副本
+                temp_config = DEFAULT_CONFIG.copy()
+                # 然后更新为保存的配置
+                for key in saved_config:
+                    if key in temp_config:
+                        temp_config[key] = saved_config[key]
+                # 检查并添加缺少的配置项
+                missing_configs = {}
+                for key, value in DEFAULT_CONFIG.items():
+                    if key not in saved_config:
+                        missing_configs[key] = value
+                        temp_config[key] = value
+                
+                if missing_configs:
+                    log_system(f"检测到缺少的配置项: {missing_configs}")
+                    # 保存更新后的配置
+                    system_config = temp_config
+                    save_config()
+                    log_system("配置已自动更新，添加了缺少的配置项")
+                else:
+                    system_config = temp_config
+                    log_system("配置文件加载成功")
+        else:
+            log_system("配置文件不存在，使用默认配置")
+            # 使用默认配置并保存
+            system_config = DEFAULT_CONFIG.copy()
+            save_config()
+    except Exception as e:
+        log_system(f"配置加载错误: {str(e)}", 'error')
+        print(f"配置加载错误: {e}")
+        # 如果加载失败，使用默认配置
+        system_config = DEFAULT_CONFIG.copy()
 
 # ==============================================
 # 文件元数据管理
@@ -982,41 +1204,11 @@ class OfflineDownloader:
                 if self.task_id in active_downloaders:
                     del active_downloaders[self.task_id]
 
-def offline_download_worker():
-    """
-    离线下载工作线程
-    """
-    while True:
-        try:
-            task_id = OFFLINE_QUEUE.get(timeout=10)
-            task = OFFLINE_TASKS.get(task_id)
-            
-            if not task:
-                OFFLINE_QUEUE.task_done()
-                continue
-            
-            # 检查任务是否已被取消
-            if task['status'] == 'cancelled':
-                OFFLINE_QUEUE.task_done()
-                continue
-                
-            try:
-                # 创建下载器并添加到活动下载器映射表
-                downloader = OfflineDownloader(task_id, task['url'])
-                with offline_download_lock:
-                    active_downloaders[task_id] = downloader
-                
-                # 执行下载
-                downloader.run()
-                
-            finally:
-                OFFLINE_QUEUE.task_done()
-                
-        except queue.Empty:
-            continue
+# 离线下载功能已统一使用OfflineDownloadThread类实现
 
-# 启动工作线程
-threading.Thread(target=offline_download_worker, daemon=True).start()
+# ===============================================
+# 实用工具函数
+# ===============================================
 
 
 # ===============================================
@@ -1573,7 +1765,7 @@ def api_update_config():
             if port < 1024 or port > 65535:
                 return jsonify({"status": "error", "message": "端口必须在1024-65535之间"}), 400
             system_config['port'] = port
-        
+            
         # 更新网络接口配置
         if 'network_interface' in data:
             system_config['network_interface'] = data['network_interface']
@@ -1584,7 +1776,514 @@ def api_update_config():
         return jsonify({"status": "error", "message": str(e)}), 400
 
 
+# ==============================================
+# 系统管理API
+# ==============================================
+
+@app.route('/api/update_config_auto', methods=['POST'])
+@require_admin_token
+def api_update_config_auto():
+    """自动更新配置文件信息API"""
+    try:
+        # 重新从文件加载配置
+        load_config()
+        return jsonify({"status": "success", "message": "配置文件已自动更新"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/restart_server', methods=['POST'])
+@require_admin_token
+def api_restart_server():
+    """管理员一键重启服务API"""
+    try:
+        # 在Windows系统上，我们通过创建一个新的进程来重启服务
+        if platform.system() == 'Windows':
+            # 保存当前运行的Python脚本路径
+            script_path = os.path.abspath(__file__)
+            # 启动一个新的进程来运行相同的脚本，然后退出当前进程
+            def restart():
+                # 延迟一段时间再重启，以便响应能够返回给客户端
+                time.sleep(2)
+                # 在Windows上使用start命令启动新进程
+                subprocess.Popen(['start', 'python', script_path], shell=True)
+            
+            # 在新线程中执行重启操作
+            threading.Thread(target=restart).start()
+            return jsonify({"status": "success", "message": "服务正在重启中..."})
+        else:
+            # 对于非Windows系统，实现方式可能有所不同
+            return jsonify({"status": "error", "message": "当前系统不支持自动重启功能"}), 400
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/system_log', methods=['GET'])
+@require_admin_token
+def api_system_log():
+    """查看系统日志API"""
+    try:
+        # 获取参数
+        log_type = request.args.get('type', 'system')
+        days = int(request.args.get('days', 1))
+        
+        # 验证日志类型
+        valid_types = ['system', 'api', 'user', 'frp']
+        if log_type not in valid_types:
+            log_type = 'system'
+        
+        # 限制天数范围
+        if days < 1:
+            days = 1
+        elif days > 7:
+            days = 7
+        
+        # 获取日志内容
+        log_content = get_logs(log_type, days)
+        
+        # 如果没有日志内容，返回提示信息
+        if not log_content:
+            log_content = f"没有找到{log_type}类型的日志记录\n"
+        
+        response = app.response_class(
+            response=log_content,
+            status=200,
+            mimetype='text/plain'
+        )
+        return response
+    except Exception as e:
+        error_msg = f"获取日志失败: {str(e)}"
+        log_system(error_msg, 'error')
+        return error_msg, 500
+
+
+# ==============================================
+# ChmlFrp内网穿透API
+# ==============================================
+
+@app.route('/api/update_chmlfrp_config', methods=['POST'])
+@require_admin_token
+def api_update_chmlfrp_config():
+    """更新ChmlFrp配置API"""
+    try:
+        data = request.get_json()
+        
+        # 保存ChmlFrp配置
+        if 'chmlfrp_token' in data:
+            system_config['chmlfrp_token'] = data['chmlfrp_token']
+        
+        save_config()
+        return jsonify({"status": "success", "message": "ChmlFrp配置已保存"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@app.route('/api/check_chmlfrp_status', methods=['GET', 'POST'])
+@require_admin_token
+def api_check_chmlfrp_status():
+    """检查ChmlFrp状态API，支持GET和POST请求"""
+    try:
+        # 从请求中获取token参数（支持GET和POST）
+        token = None
+        
+        if request.method == 'POST':
+            data = request.get_json()
+            token = data.get('token') or system_config.get('chmlfrp_token', '')
+        else:
+            token = system_config.get('chmlfrp_token')
+        
+        if not token:
+            return jsonify({"success": False, "message": "请先配置ChmlFrp Token"}), 400
+        
+        # 检查API状态
+        api_status_url = "http://cf-v2.uapis.cn/api/server-status"
+        response = requests.get(api_status_url, timeout=5)
+        api_status = response.json()
+        
+        # 获取用户信息
+        user_info_url = f"http://cf-v2.uapis.cn/userinfo?token={token}"
+        user_response = requests.get(user_info_url, timeout=5)
+        user_info = user_response.json()
+        
+        # 获取隧道列表
+        tunnel_list_url = f"http://cf-v2.uapis.cn/tunnel?token={token}"
+        tunnel_response = requests.get(tunnel_list_url, timeout=5)
+        tunnel_list = tunnel_response.json()
+        
+        # 转换隧道列表格式，使其更容易在前端处理
+        tunnels = []
+        # 检查tunnel_list是否是包含data字段的对象
+        if isinstance(tunnel_list, dict) and 'data' in tunnel_list and isinstance(tunnel_list['data'], list):
+            tunnel_data = tunnel_list['data']
+            for tunnel in tunnel_data:
+                # 提取隧道的基本信息
+                tunnel_info = {
+                    'id': tunnel.get('id', ''),
+                    'name': tunnel.get('name', ''),
+                    'type': tunnel.get('type', 'tcp'),
+                    'local_ip': tunnel.get('localip', '127.0.0.1'),  # 注意字段名是localip而不是local_ip
+                    'local_port': tunnel.get('dorp', '5000'),  # 注意字段名是dorp而不是local_port
+                    'remote_port': tunnel.get('nport', ''),  # 注意字段名是nport而不是remote_port
+                    'ip': tunnel_list.get('ip', tunnel.get('ip', 'ct-chmlfrp.220715.xyz')),  # 优先使用tunnel_list中的IP，然后是tunnel中的IP
+                    'nport': tunnel.get('nport', ''),  # 添加nport字段以兼容前端代码
+                    'node': tunnel.get('node', '')  # 添加node字段以显示节点名称
+                }
+                tunnels.append(tunnel_info)
+        # 兼容旧的列表格式
+        elif isinstance(tunnel_list, list):
+            for tunnel in tunnel_list:
+                # 提取隧道的基本信息
+                tunnel_info = {
+                    'id': tunnel.get('id', ''),
+                    'name': tunnel.get('name', ''),
+                    'type': tunnel.get('type', 'tcp'),
+                    'local_ip': tunnel.get('local_ip', '127.0.0.1'),
+                    'local_port': tunnel.get('local_port', '5000'),
+                    'remote_port': tunnel.get('remote_port', ''),
+                    'node': tunnel.get('node', '')  # 添加node字段以显示节点名称
+                }
+                tunnels.append(tunnel_info)
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "api_status": api_status,
+                "user_info": user_info,
+                "tunnel_list": tunnel_list
+            },
+            "tunnels": tunnels,  # 新增简化的隧道列表格式，便于前端展示
+            "server": {
+                "ip": api_status.get('server', {}).get('ip', 'cf-v2.uapis.cn'),
+                "port": api_status.get('server', {}).get('port', 7000),
+                "tls": api_status.get('server', {}).get('tls', False)
+            }
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/get_chmlfrp_tunnel_config', methods=['POST'])
+@require_admin_token
+def api_get_chmlfrp_tunnel_config():
+    """获取ChmlFrp隧道配置并生成符合要求格式的frpc.ini文件"""
+    try:
+        # 从请求体中获取参数
+        data = request.get_json()
+        token = data.get('token') or system_config.get('chmlfrp_token', '')
+        tunnel_id = data.get('tunnel_id')  # 新增的隧道ID参数
+        tunnel_name = data.get('tunnel_name') or system_config.get('chmlfrp_tunnel_name', 'fileshare')
+        
+        if not token:
+            return "请先设置ChmlFrp Token", 400
+        
+        # 获取API状态信息，这将用于获取服务器地址和端口
+        api_status_url = "http://cf-v2.uapis.cn/api/server-status"
+        api_status_response = requests.get(api_status_url, timeout=5)
+        api_status = api_status_response.json()
+        
+        # 获取隧道列表，用于获取特定隧道的信息
+        tunnel_list_url = f"http://cf-v2.uapis.cn/tunnel?token={token}"
+        tunnel_response = requests.get(tunnel_list_url, timeout=5)
+        tunnel_list = tunnel_response.json()
+        
+        # 处理隧道列表数据（兼容不同格式）
+        tunnel_data = []
+        if isinstance(tunnel_list, dict) and 'data' in tunnel_list and isinstance(tunnel_list['data'], list):
+            tunnel_data = tunnel_list['data']
+        elif isinstance(tunnel_list, list):
+            tunnel_data = tunnel_list
+        
+        # 提取服务器配置信息
+        # 优先使用tunnel_list中的ip字段，然后再使用api_status中的值
+        server_addr = tunnel_list.get('ip', api_status.get('server', {}).get('ip', 'ct-chmlfrp.220715.xyz'))
+        server_port = api_status.get('server', {}).get('port', 7000)
+        tls_enable = api_status.get('server', {}).get('tls', False)
+        
+        # 生成快捷启动命令信息
+        commands_info = {
+            'windows': f'frpc.exe -u {token} -p {tunnel_id}',
+            'linux_macos': f'chmod +x frpc && ./frpc -u {token} -p {tunnel_id}'
+        }
+        
+        # 返回成功信息和命令
+        return jsonify({
+            'success': True,
+            'message': '快捷启动命令已生成',
+            'commands': commands_info
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+    except Exception as e:
+        return str(e), 500
+
+# 全局变量用于存储frpc进程
+frpc_process = None
+
+# 确保chmlfrp目录存在
+def ensure_chmlfrp_dir():
+    """确保chmlfrp目录存在，如果不存在则创建"""
+    chmlfrp_dir = os.path.join(app.root_path, 'chmlfrp')
+    if not os.path.exists(chmlfrp_dir):
+        try:
+            os.makedirs(chmlfrp_dir)
+            log_system(f'创建chmlfrp目录: {chmlfrp_dir}', 'info')
+        except Exception as e:
+            log_system(f'创建chmlfrp目录失败: {str(e)}', 'error')
+    return chmlfrp_dir
+
+@app.route('/api/start_chmlfrp_tunnel', methods=['POST'])
+@require_admin_token
+def api_start_chmlfrp_tunnel():
+    """启动ChmlFrp隧道API"""
+    global frpc_process
+    
+    try:
+        data = request.get_json()
+        tunnel_id = data.get('tunnel_id', '')
+        tunnel_name = data.get('tunnel_name', '')
+        token = data.get('token') or system_config.get('chmlfrp_token', '')
+        
+        if not token:
+            return jsonify({
+                'success': False,
+                'message': '请先设置ChmlFrp Token'
+            }), 400
+        
+        # 检查是否已经有运行中的frpc进程
+        if frpc_process and frpc_process.poll() is None:
+            return jsonify({
+                'success': True,
+                'message': '隧道已经在运行中'
+            })
+        
+        # 确保chmlfrp目录存在
+        chmlfrp_dir = ensure_chmlfrp_dir()
+        
+        # 记录日志
+        log_system(f'启动隧道: {tunnel_name} (ID: {tunnel_id})', 'info')
+        log_frp(f'准备使用快捷启动命令启动隧道 {tunnel_name} (ID: {tunnel_id})', 'info')
+        
+        # 根据操作系统选择启动命令
+        import subprocess
+        import sys
+        
+        if sys.platform == 'win32':
+            # Windows系统
+            frpc_path = os.path.join(chmlfrp_dir, 'frpc.exe')
+            # 检查frpc.exe是否存在
+            if not os.path.exists(frpc_path):
+                return jsonify({
+                    'success': False,
+                    'message': 'frpc.exe不存在，请先下载客户端程序并放置到chmlfrp目录'
+                }), 400
+            
+            # 使用快捷启动命令格式
+            frpc_process = subprocess.Popen(
+                [frpc_path, '-u', token, '-p', tunnel_id],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=chmlfrp_dir,
+                shell=False
+            )
+        else:
+            # Linux/MacOS系统
+            frpc_path = os.path.join(chmlfrp_dir, 'frpc')
+            # 检查frpc是否存在
+            if not os.path.exists(frpc_path):
+                return jsonify({
+                    'success': False,
+                    'message': 'frpc程序不存在，请先下载客户端程序并放置到chmlfrp目录'
+                }), 400
+            
+            # 给予执行权限
+            import stat
+            os.chmod(frpc_path, os.stat(frpc_path).st_mode | stat.S_IEXEC)
+            
+            # 使用快捷启动命令格式
+            frpc_process = subprocess.Popen(
+                [frpc_path, '-u', token, '-p', tunnel_id],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=chmlfrp_dir,
+                shell=False
+            )
+        
+        # 添加进程日志监控，使用专门的frp日志系统
+        # 获取用户真实IP地址
+        user_ip = get_real_ip()
+        
+        def log_frpc_output(process):
+            log_frp(f'frpc进程已启动，开始监控输出', 'info')
+            
+            # 确保chmlfrp目录存在
+            chmlfrp_dir = ensure_chmlfrp_dir()
+            
+            # 定义日志文件路径
+            log_file_path = os.path.join(chmlfrp_dir, 'chmlfrp.txt')
+            
+            # 写入启动信息到文件
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            with open(log_file_path, 'a', encoding='utf-8') as f:
+                f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] frpc进程已启动，开始监控输出\n')
+            
+            # 监控标准输出
+            while True:
+                line = process.stdout.readline()
+                if line:
+                    log_content = line.decode('utf-8', errors='replace').strip()
+                    log_frp(log_content, 'info')
+                    
+                    # 写入到chmlfrp.txt文件
+                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                    with open(log_file_path, 'a', encoding='utf-8') as f:
+                        f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] {log_content}\n')
+                else:
+                    break
+            
+            # 记录错误输出
+            error = process.stderr.read()
+            if error:
+                error_content = error.decode('utf-8', errors='replace').strip()
+                log_frp(error_content, 'error')
+                
+                # 写入错误到chmlfrp.txt文件
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                with open(log_file_path, 'a', encoding='utf-8') as f:
+                    f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] [ERROR] {error_content}\n')
+            
+            # 记录进程结束信息
+            exit_code = process.poll()
+            log_frp(f'frpc进程已结束，退出码: {exit_code}', 'info')
+            
+            # 写入结束信息到chmlfrp.txt文件
+            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+            with open(log_file_path, 'a', encoding='utf-8') as f:
+                f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] frpc进程已结束，退出码: {exit_code}\n')
+                f.write('----------------------------------------\n')
+        
+        # 启动日志监控线程
+        import threading
+        log_thread = threading.Thread(target=log_frpc_output, args=(frpc_process,))
+        log_thread.daemon = True
+        log_thread.start()
+        
+        return jsonify({
+            'success': True,
+            'message': f'隧道 {tunnel_name} 启动成功'
+        })
+        
+    except Exception as e:
+        log_system(f'启动隧道失败: {str(e)}', 'error')
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+@app.route('/api/stop_chmlfrp_tunnel', methods=['POST'])
+@require_admin_token
+def api_stop_chmlfrp_tunnel():
+    """停止ChmlFrp隧道API"""
+    global frpc_process
+    
+    try:
+        # 检查是否有运行中的frpc进程
+        if frpc_process and frpc_process.poll() is None:
+            # 记录日志
+            log_system('停止隧道', 'info')
+            
+            # 杀死进程
+            if sys.platform == 'win32':
+                # Windows系统
+                subprocess.call(['taskkill', '/F', '/T', '/PID', str(frpc_process.pid)])
+            else:
+                # Linux/MacOS系统
+                frpc_process.terminate()
+                try:
+                    # 等待进程结束，最多等待5秒
+                    frpc_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    # 如果超时，强制杀死进程
+                    frpc_process.kill()
+            
+            # 重置全局变量
+            frpc_process = None
+            
+            return jsonify({
+                'success': True,
+                'message': '隧道已成功停止'
+            })
+        else:
+            # 没有运行中的进程
+            frpc_process = None  # 重置全局变量
+            return jsonify({
+                'success': True,
+                'message': '隧道未在运行'
+            })
+            
+    except Exception as e:
+        log_system(f'停止隧道失败: {str(e)}', 'error')
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/get_chmlfrp_log', methods=['GET'])
+@require_admin_token
+def api_get_chmlfrp_log():
+    """获取ChmlFrp日志API"""
+    try:
+        chmlfrp_dir = os.path.join(app.root_path, 'chmlfrp')
+        log_file_path = os.path.join(chmlfrp_dir, 'chmlfrp.txt')
+        
+        # 检查日志文件是否存在
+        if not os.path.exists(log_file_path):
+            # 如果文件不存在，创建一个空文件
+            with open(log_file_path, 'w', encoding='utf-8') as f:
+                f.write('')
+            return jsonify({"success": True, "log": [], "message": "日志文件已创建"})
+        
+        # 读取日志文件内容
+        with open(log_file_path, 'r', encoding='utf-8') as f:
+            log_lines = f.readlines()
+            
+        # 返回日志内容，按行拆分
+        return jsonify({"success": True, "log": log_lines})
+    except Exception as e:
+        log_system(f'读取ChmlFrp日志失败: {str(e)}', 'error')
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@app.route('/api/clear_chmlfrp_log', methods=['POST'])
+@require_admin_token
+def api_clear_chmlfrp_log():
+    """清空ChmlFrp日志API"""
+    try:
+        chmlfrp_dir = os.path.join(app.root_path, 'chmlfrp')
+        log_file_path = os.path.join(chmlfrp_dir, 'chmlfrp.txt')
+        
+        # 确保chmlfrp目录存在
+        if not os.path.exists(chmlfrp_dir):
+            os.makedirs(chmlfrp_dir)
+        
+        # 清空日志文件
+        with open(log_file_path, 'w', encoding='utf-8') as f:
+            f.write('')
+        
+        log_system('ChmlFrp日志已清空', 'info')
+        return jsonify({"success": True, "message": "日志已清空"})
+    except Exception as e:
+        log_system(f'清空ChmlFrp日志失败: {str(e)}', 'error')
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ==============================================
 # 页面路由
+# ==============================================
 @app.route('/index')
 def index():
     """文件下载中心首页"""
@@ -1637,8 +2336,9 @@ def preview(filename):
 @app.route('/captcha_settings')
 @require_admin_token
 def captcha_settings():
-    """验证码设置页面"""
-    return render_template('captcha_settings.html', system_config=system_config)
+    """验证码设置页面 - 重定向到管理页面"""
+    # 极验设置已整合到管理页面中，重定向到管理页面
+    return redirect('/admin')
 
 
 @app.route('/')
@@ -1789,7 +2489,7 @@ class OfflineDownloadThread(threading.Thread):
                 pass
             
     def stop(self):
-        self.running = True
+        self.running = False
 
 # 初始化离线下载相关变量
 OFFLINE_QUEUE = queue.Queue()
@@ -2029,7 +2729,7 @@ def api_pdf_info():
         
         # 打开PDF文件
         with open(file_path, 'rb') as file:
-            pdf_reader = PyPDF.PdfReader(file)
+            pdf_reader = pypdf.PdfReader(file)
             # 获取PDF信息
             num_pages = len(pdf_reader.pages)
             
@@ -2101,11 +2801,17 @@ def error_500():
     return render_template('500.html')
 
 
+@app.route('/503')
+def error_503():
+    """503错误页面"""
+    return render_template('503.html')
+
 # 418彩蛋路由
 @app.route('/418')
 def error_418():
     """418错误页面"""
     return render_template('418.html')
+
 
 # 错误处理器
 @app.errorhandler(400)
@@ -2128,6 +2834,18 @@ def handle_500(error):
     """处理500错误"""
     return render_template('500.html'), 500
 
+@app.errorhandler(503)
+def handle_503(error):
+    """处理503错误"""
+    return render_template('503.html'), 503
+
+@app.errorhandler(418)
+def handle_418(error):
+    """处理418错误"""
+    return render_template('418.html'), 418
+
+
+
 
 # 启动服务
 if __name__ == '__main__':
@@ -2136,6 +2854,19 @@ if __name__ == '__main__':
         print(f"{rule.endpoint}: {rule}")
     
     init_system()
+    
+    os.makedirs(system_config['upload_folder'], exist_ok=True)
+    os.chmod(system_config['upload_folder'], 0o777)  # 确保可写
+    
+    print("服务已启动")
+    print(f"应用名称: {system_config['app_name']} v{system_config['app_version']}")
+    print(f"上传目录: {system_config['upload_folder']}")
+    print(f"总空间上限: {convert_size(system_config['max_total_size'] * 1024 * 1024)}")
+    print(f"服务启动时间: {SERVICE_START_TIME}")
+    print(f"主服务端口: {system_config['port']}")
+    print("\n访问地址: http://localhost:" + str(system_config['port']) + "/index")
+    print("管理页面: http://localhost:" + str(system_config['port']) + "/admin/login")
+    print("纯下载页面: http://localhost:" + str(system_config['port']) + "/")
     
     # 检查更新
     current_version = system_config['app_version']
@@ -2146,18 +2877,7 @@ if __name__ == '__main__':
         print("请访问链接下载并更新到最新版本。\n")
     else:
         print("\n当前已是最新版本。\n")
-    
-    os.makedirs(system_config['upload_folder'], exist_ok=True)
-    os.chmod(system_config['upload_folder'], 0o777)  # 确保可写
-    
-    print("服务已启动")
-    print(f"应用名称: {system_config['app_name']} v{system_config['app_version']}")
-    print(f"上传目录: {system_config['upload_folder']}")
-    print(f"总空间上限: {convert_size(system_config['max_total_size'] * 1024 * 1024)}")
-    print(f"服务启动时间: {SERVICE_START_TIME}")
-    print("\n访问地址: http://localhost:" + str(system_config['port']) + "/index")
-    print("管理页面: http://localhost:" + str(system_config['port']) + "/admin/login")
-    print("纯下载页面: http://localhost:" + str(system_config['port']) + "/")
+
     print("\033[91m启动后,请到管理员页面配置密码,以生成配置文件")
     print("请管理员尽快到配置文件中配置极验,以便使用离线下载功能\033[0m")
 

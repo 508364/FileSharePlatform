@@ -1,154 +1,156 @@
+# 文件共享平台 v1.8
 
-# 文件共享平台 v1.7
+<div align="center">
+  <img src="favicon.ico" alt="文件共享平台" width="80" height="80">
+  <p align="center">
+    <a href="https://github.com/508364/FileSharePlatform"><strong>✨ 项目主页</strong></a>
+    ·
+    <a href="API_DOC.md"><strong>📖 API文档</strong></a>
+    ·
+    <a href="Changelog.md"><strong>📝 更新日志</strong></a>
+  </p>
+</div>
 
-***此版更新了更新日志***
-[更新日志](./Changelog.md)
+## 📋 项目介绍
+文件共享平台是一个功能完善的Web应用系统，基于Flask框架开发，旨在提供安全、高效的文件管理与共享解决方案。系统支持文件上传下载、预览、离线下载、GitHub仓库克隆等多种功能，并提供完善的管理界面进行系统配置。
 
-基于 Flask 的轻量级文件共享解决方案，支持文件上传、下载、空间管理及系统监控
+## ✨ 功能特点
 
-https://github.com/508364/fileshareplatform
+### 📁 基础文件管理
+- **文件上传与下载**：支持大文件上传，断点续传，多线程下载
+- **多文件上传**：批量上传功能，提高工作效率
+- **文件预览**：支持图片、文档、音视频等多种格式的在线预览
+- **元数据管理**：自动获取并保存文件属性信息
 
----
+### 🔧 高级功能
+- **离线下载**：支持通过URL和BT种子进行离线下载
+- **GitHub仓库克隆**：一键克隆代码仓库到本地
+- **磁盘空间监控**：实时显示存储空间使用情况
+- **文件搜索**：快速定位需要的文件
 
-## 主要功能
+### 🎨 用户体验
+- **响应式设计**：适配桌面端和移动端
+- **深色/浅色模式**：支持主题切换，保护视力
+- **友好的错误页面**：完善的错误处理机制
+- **实时进度显示**：文件上传下载进度实时反馈
 
-1. **文件管理**
-   - 支持拖拽上传/浏览上传
-   - 文件大小限制（单文件/总空间）
-   - 文件下载计数统计
+### ⚙️ 系统管理
+- **管理员控制面板**：系统配置、用户管理、日志查看
+- **系统配置管理**：灵活调整系统参数
+- **多平台支持**：兼容Windows、Linux、macOS
+- **安全机制**：文件访问控制，防止未授权访问
 
-2. **系统监控**
-   - 实时磁盘空间监控
-   - 服务器资源监控（CPU/内存/网络）
-   - 服务运行状态可视化
+## 🛠 环境要求
 
-3. **安全管理**
-   - 管理员权限认证
-   - 敏感操作日志记录
-   - 文件名安全过滤
+- **Python版本**：Python 3.9或更高版本
+- **依赖包**：详见requirements.txt文件
+- **系统支持**：Windows 64位、Linux、macOS
 
-4. **扩展性**
-   - 模块化代码结构
-   - 支持自定义配置
-   - 插件式架构设计
+## 🚀 快速开始
 
----
+### 安装方法
 
-## 快速开始
+#### 方法一：使用提供的Python环境
+1. 运行`start.bat`脚本自动安装Python和依赖
+2. 系统会自动完成所有安装配置
 
-### 1. 环境准备
-
-```bash
-# 安装依赖库
-pip install -r requirements.txt
-
-# 创建虚拟环境（推荐）
-python -m venv venv
-source venv/bin/activate  # Linux/macOS
-venv\Scripts\activate   # Windows
-```
-
-### 2. 配置文件
-
-复制并修改配置模板：
-
-```bash
-cp fileshare_config.json.example fileshare_config.json
-nano fileshare_config.json  # 修改配置参数
-```
-
-关键配置项说明：
-
-```json
-{
-  "max_file_size": 100,      // 单文件最大限制（MB）
-  "max_total_size": 1024,    // 总存储空间限制（MB）
-  "upload_folder": "uploads",// 文件存储目录
-  "admin_user": "admin",     // 管理员账号
-  "admin_password": "admin123"// 管理员密码
-}
-```
-
-### 3. 运行服务
-
-```bash
-# 开发模式
-export FLASK_ENV=development
-flask run --host=0.0.0.0 --port=5000
-
-# 生产模式（推荐使用Gunicorn）
-gunicorn --bind 0.0.0.0:5000 server:app
-```
-
-### 4. 访问界面
-
-- 主页面：http://localhost:5000/index
-- 管理后台：http://localhost:5000/admin
-- 开源协议：http://localhost:5000/open_source.html
-
----
-
-## 高级配置
-
-### 1. 自定义端口
-
-```bash
-# 命令行参数
-python server.py --port 8080
-
-# 配置文件设置
-"port": 8080
-```
-
-### 2. 网络接口绑定
-
-```bash
-# 绑定特定网卡
-python server.py --interface eth0
-
-# 配置文件设置
-"network_interface": "eth0"
-```
-
-### 3. 日志管理
-
-```bash
-# 启用日志记录
-export FLASK_LOG_LEVEL=DEBUG
-
-# 日志文件配置
-"logging": {
-  "level": "INFO",
-  "file": "app.log"
-}
-```
-
----
-
-## 注意事项
-
-1. **文件权限**：
+#### 方法二：手动安装
+1. 确保已安装Python 3.9或更高版本
+2. 安装依赖包
    ```bash
-   chmod 755 uploads/ -R
-   chown www-data:www-data uploads/  # Nginx用户组
+   pip install -r requirements.txt
+   ```
+3. 启动服务
+   ```bash
+   python server.py
    ```
 
-2. **安全建议**：
-   - 生产环境禁用 DEBUG 模式
-   - 定期清理 uploads 目录
-   - 使用 HTTPS 加密传输
+### 首次访问
+- **用户界面**：http://localhost:5000/index
+- **管理员登录**：http://localhost:5000/admin/login
+  - 默认账号：admin
+  - 默认密码：admin@123
 
-3. **性能优化**：
-   ```bash
-   # Gunicorn 生产部署
-   gunicorn --workers=4 --threads=2 --timeout=120 server:app
-   ```
+## ⚙️ 配置说明
+
+### 配置文件
+系统配置存储在`fileshare_config.json`文件中，主要配置项包括：
+
+- `upload_folder`：文件上传目录
+- `max_file_size`：最大文件大小限制（MB）
+- `max_total_size`：总存储空间上限（MB）
+- `port`：服务端口号
+- `admin_user`：管理员用户名
+- `admin_password`：管理员密码（建议首次登录后修改）
+- `offline_download_enabled`：是否启用离线下载功能
+
+### 通过管理界面配置
+登录管理员面板后，可以在系统配置页面直观地修改各项参数，无需手动编辑配置文件。
+
+## 📖 使用指南
+
+### 文件上传
+1. 点击主页的上传区域或浏览按钮选择文件
+2. 支持拖拽文件到上传区域
+3. 上传过程中可以查看进度条
+4. 上传完成后文件会显示在文件列表中
+
+### 文件下载
+1. 在文件列表中找到需要的文件
+2. 点击文件名或下载按钮进行下载
+3. 支持右键选择"另存为"保存文件
+
+### 离线下载
+1. 点击右上角的离线下载按钮
+2. 输入下载链接或上传BT种子
+3. 点击开始下载，系统会在后台下载文件
+4. 下载完成后可以在文件列表中找到下载的文件
+
+### GitHub仓库克隆
+1. 在管理员页面找到GitHub克隆功能
+2. 输入仓库URL
+3. 点击克隆按钮，系统会自动下载仓库代码
+
+## 📝 版本更新记录
+
+### v1.8 更新内容
+- **修复**：PDF文件预览功能完全修复
+- **修复**：离线下载线程重复实现问题，统一使用`OfflineDownloadThread`类
+- **修复**：离线下载线程无法正常停止的问题
+- **修复**：主页最大上传大小显示错误（从100 Bytes修正为100 MB）
+- **优化**：深色模式在所有页面的显示完整性
+- **优化**：文件上传下载的性能和稳定性
+
+### 历史版本
+详细更新记录请查看[Changelog.md](Changelog.md)
+
+## 🔍 常见问题
+
+### 服务启动失败
+- 检查端口是否被占用
+- 确保Python环境正确安装
+- 查看日志文件获取详细错误信息
+
+### 文件上传失败
+- 检查文件大小是否超过限制
+- 确保磁盘空间充足
+- 尝试使用不同浏览器
+
+### 预览功能异常
+- 对于不支持的文件格式，无法提供预览
+- PDF预览需要正确的PDF库支持
+
+## 📚 API文档
+详细的API使用说明请参考[API_DOC.md](API_DOC.md)
+
+## 🤝 贡献指南
+欢迎提交Issue和Pull Request来帮助改进项目
+
+## 📄 许可证
+本项目使用[MIT许可证](LICENSE)
+
+## 💖 支持与反馈
+如有任何问题或建议，请在GitHub上提交Issue或联系开发者
 
 ---
-
-***有时候进入网页无法加载图标是正常的，因为它们需要时间进行缓存，这不会影响正常使用***
----
-
-## 许可协议
-
-本项目采用 MIT 开源，您可以自由使用、修改和分发代码，但需保留原始版权声明。
+© 2025 508364. 保留所有权益

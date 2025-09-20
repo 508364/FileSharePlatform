@@ -190,8 +190,14 @@
         
         #drop-area {
             background-color: var(--input-bg);
-            border: 1px dashed var(--border-color);
-            transition: background-color 0.3s, border-color 0.3s;
+            border: 2px dashed var(--border-color);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        #drop-area:hover, #drop-area.drag-over {
+            border-color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.05);
         }
     </style>
 </head>
@@ -260,10 +266,10 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="card-title mb-0"><i class="bi bi-cloud-upload me-2"></i>上传文件</h5>
-                    <span class="badge bg-primary" id="max-file-size">最大可以上传{{ max_file_size }}MB</span>
+                        <span class="badge bg-primary" id="max-file-size">最大可以上传{{ max_file_size }}</span>
                 </div>
                 
-                <div class="border rounded p-5 text-center mb-3" id="drop-area">
+                <div class="rounded p-5 text-center mb-3" id="drop-area">
                     <div id="upload-content">
                         <i class="bi bi-cloud-arrow-up display-4 text-muted mb-3"></i>
                         <h6>拖放文件到此处上传</h6>
@@ -287,8 +293,8 @@
             <h5><i class="bi bi-files me-2"></i>文件列表</h5>
             <div class="d-flex align-items-center">
                 <div class="input-group" style="max-width: 300px;">
-                    <input type="text" class="form-control" placeholder="搜索功能不可用" id="search-input" disabled>
-                    <button class="btn btn-outline-secondary" type="button" disabled>
+                    <input type="text" class="form-control" placeholder="搜索文件..." id="search-input">
+                    <button class="btn btn-outline-secondary" type="button">
                         <i class="bi bi-search"></i>
                     </button>
                 </div>
@@ -307,15 +313,23 @@
     </div>
 
     <script>
+        // 全局配置变量
+        let config = {
+            max_file_size: 100 * 1024 * 1024 // 默认100MB，实际会被API返回值覆盖
+        };
+        
         // 获取系统配置
         fetch('/api/system/config')
             .then(res => res.json())
-            .then(config => {
+            .then(data => {
+                config = data; // 保存完整配置到全局变量
                 if (config.web_ui) {
                     document.title = config.web_ui.title || '文件共享平台';
                     document.querySelector('.navbar-brand').innerText = config.web_ui.brand;
                 }
-                document.getElementById('max-file-size').innerText = `最大${formatBytes(config.max_file_size)}`;
+                // 将MB转换为字节
+                const maxFileSizeBytes = config.max_file_size * 1024 * 1024;
+                document.getElementById('max-file-size').innerText = `最大${formatBytes(maxFileSizeBytes)}`;
             });
 
         // 初始化文件上传功能
@@ -379,6 +393,18 @@
         
         // 上传文件函数
         function uploadFile(file) {
+            // 检查文件大小是否超过最大限制
+            if (file.size > config.max_file_size) {
+                uploadStats.innerHTML = `<span class="text-danger"><i class="bi bi-exclamation-circle-fill"></i> 文件大小超过限制(${formatBytes(config.max_file_size)})</span>`;
+                uploadContent.classList.add('d-none');
+                uploadProgress.classList.remove('d-none');
+                setTimeout(() => {
+                    uploadProgress.classList.add('d-none');
+                    uploadContent.classList.remove('d-none');
+                }, 2000);
+                return;
+            }
+            
             // 显示上传状态
             uploadContent.classList.add('d-none');
             uploadProgress.classList.remove('d-none');
@@ -606,7 +632,7 @@ function formatBytes(bytes, decimals = 2) {
     
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
     
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     
@@ -622,27 +648,42 @@ function formatBytes(bytes, decimals = 2) {
         
         // 搜索功能
         const searchInput = document.getElementById('search-input');
-        searchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            
-            // 如果没有搜索词，显示所有文件
-            if (!searchTerm) {
-                document.querySelectorAll('.file-card').forEach(card => {
-                    card.closest('.col').style.display = '';
-                });
-                return;
-            }
-            
-            // 搜索匹配的文件
-            document.querySelectorAll('.file-card').forEach(card => {
-                const title = card.querySelector('.card-title').textContent.toLowerCase();
-                if (title.includes(searchTerm)) {
-                    card.closest('.col').style.display = '';
-                } else {
-                    card.closest('.col').style.display = 'none';
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                console.log('搜索功能被触发，搜索词:', this.value);
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                // 如果没有搜索词，显示所有文件
+                if (!searchTerm) {
+                    document.querySelectorAll('.file-card').forEach(card => {
+                        const col = card.closest('.col');
+                        if (col) {
+                            col.style.display = '';
+                        } else {
+                            console.error('未找到.col元素:', card);
+                        }
+                    });
+                    return;
                 }
+                
+                // 搜索匹配的文件
+                document.querySelectorAll('.file-card').forEach(card => {
+                    const title = card.querySelector('.card-title').textContent.toLowerCase();
+                    const col = card.closest('.col');
+                    if (col) {
+                        if (title.includes(searchTerm)) {
+                            col.style.display = '';
+                        } else {
+                            col.style.display = 'none';
+                        }
+                    } else {
+                        console.error('未找到.col元素:', card);
+                    }
+                });
             });
-        });
+        } else {
+            console.error('未找到搜索输入框');
+        }
                
         // 页面加载时初始化
         window.addEventListener('load', () => {
