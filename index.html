@@ -84,7 +84,7 @@
                     </a>
                     <a href="#" class="flex items-center space-x-2 hover:text-blue-400 transition-colors">
                         <i class="fa fa-home"></i>
-                        <span>返回首页</span>
+                        <span><a href="#" id="parentLink">返回</a></span>
                     </a>
                 </div>
                 
@@ -201,6 +201,26 @@
     </footer>
 
     <script>
+          document.getElementById('parentLink').href = getParentUrl();
+  
+          function getParentUrl() {
+            // 获取当前URL的路径部分（不包括域名）
+            const path = window.location.pathname;
+    
+            // 分割路径为数组
+            const parts = path.split('/').filter(part => part !== '');
+    
+            // 移除最后一部分
+            if (parts.length > 1) {
+              parts.pop();
+            }
+    
+            // 重新构建上一级URL
+            const parentUrl = window.location.origin + (parts.length ? '/' + parts.join('/') : '');
+    
+            return parentUrl;
+          }
+        
         document.addEventListener('DOMContentLoaded', function() {
             // 获取GitHub Release信息
             fetch('https://api.github.com/repos/508364/FileSharePlatform/releases')
@@ -287,6 +307,7 @@
     </script>
 </body>
 </html>
+
 
 
 
