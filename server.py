@@ -1865,7 +1865,7 @@ def api_restart_server():
 # 在线更新API
 # ==============================================
 
-@app.route('/api/check_update', methods=['GET'])
+@app.route('/api/check_update', methods=['GET', 'POST'])
 @require_admin_token
 def api_check_update():
     """检查更新API"""
