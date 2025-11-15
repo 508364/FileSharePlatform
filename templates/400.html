@@ -43,16 +43,23 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
             transition: background-color 0.3s, color 0.3s;
         }
         
         .error-container {
+            -ms-flex: 1;
             flex: 1;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
+            -ms-flex-pack: center;
             justify-content: center;
+            -ms-flex-align: center;
             align-items: center;
             padding: 40px 20px;
         }
@@ -83,11 +90,23 @@
             background: var(--header-bg) !important;
         }
         
-        .theme-switch-container {
+        .bottom-left-controls {
             position: fixed;
-            top: 15px;
-            right: 15px;
+            bottom: 15px;
+            left: 15px;
             z-index: 1000;
+        }
+        
+        .bottom-left-controls button {
+            padding: 8px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .bottom-left-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         
         #theme-toggle {
@@ -180,7 +199,7 @@
             });
         });
     </script>
-    <div class="theme-switch-container">
+    <div class="bottom-left-controls">
         <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-moon"></i> 深色模式
         </button>

@@ -113,6 +113,7 @@
             background: black;
             /* 添加自适应样式 */
             height: auto;
+            object-fit: contain;
         }
 
         .file-detail-container {
@@ -137,16 +138,27 @@
             font-size: 24px;
             font-weight: 500;
             margin: 0;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-align: center;
             align-items: center;
             gap: 15px;
+            /* IE兼容性：使用margin-right代替gap */
+        }
+        .file-title > *:not(:last-child) {
+            margin-right: 15px;
         }
         
         .file-info {
+            display: -ms-flexbox;
             display: flex;
             gap: 20px;
             font-size: 14px;
             opacity: 0.9;
+            /* IE兼容性：使用margin-right代替gap */
+        }
+        .file-info > *:not(:last-child) {
+            margin-right: 20px;
         }
         
         .file-content {
@@ -159,8 +171,11 @@
             padding: 20px;
             margin-bottom: 25px;
             min-height: 500px;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-align: center;
             align-items: center;
+            -ms-flex-pack: center;
             justify-content: center;
         }
         
@@ -178,6 +193,7 @@
             background: black;
             /* 添加自适应样式 */
             height: auto;
+            /* IE不支持object-fit，使用其他方式实现类似效果 */
             object-fit: contain;
         }
         
@@ -243,19 +259,30 @@
             
             .file-header {
                 padding: 15px;
+                display: -ms-flexbox;
+                -ms-flex-direction: column;
                 flex-direction: column;
                 gap: 15px;
                 text-align: center;
+            }
+            .file-header > *:not(:last-child) {
+                margin-bottom: 15px;
             }
             
             .file-title {
                 font-size: 20px;
                 gap: 10px;
             }
+            .file-title > *:not(:last-child) {
+                margin-right: 10px !important;
+            }
             
             .file-info {
                 gap: 10px;
                 font-size: 12px;
+            }
+            .file-info > *:not(:last-child) {
+                margin-right: 10px !important;
             }
             
             .file-content {
@@ -296,6 +323,7 @@
             }
             
             .file-info {
+                -ms-flex-direction: column;
                 flex-direction: column;
                 gap: 5px;
             }
@@ -449,8 +477,19 @@
                 return;
             }
             
-            // 设置文件名
-            document.getElementById('file-name').textContent = filename;
+            // 确保文件名正确解码
+            const decodedFilename = decodeURIComponent(filename);
+            
+            // 设置文件名，并提取显示后缀
+            const fileParts = decodedFilename.split('.');
+            const extension = fileParts.length > 1 ? '.' + fileParts.pop().toLowerCase() : '';
+            const nameWithoutExt = fileParts.join('.');
+            
+            const fileNameElement = document.getElementById('file-name');
+            fileNameElement.innerHTML = `
+                <span>${nameWithoutExt}</span>
+                <span class="text-muted">${extension}</span>
+            `;
             
             // 获取文件信息
             fetch(`/api/file_info?filename=${encodeURIComponent(filename)}`)
@@ -475,6 +514,9 @@
                     
                     // 设置下载链接
                     document.getElementById('download-btn').href = `/download/${encodeURIComponent(filename)}`;
+                    
+                    // 确保预览链接也使用encodeURIComponent
+                    // 这会在renderPreview函数中使用
                     
                     // 根据文件类型渲染预览
                     renderPreview(filename, fileInfo);
@@ -503,8 +545,10 @@
                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
             }
             
-            // 渲染文件预览
+            // 根据文件类型渲染预览
             function renderPreview(filename, fileInfo) {
+                // 确保文件名正确解码
+                const decodedFilename = decodeURIComponent(filename);
                 const container = document.getElementById('preview-container');
                 const ext = filename.split('.').pop().toLowerCase();
                 
@@ -515,11 +559,35 @@
                 // 设置文件图标
                 setFileIcon(ext);
                 
+                // 处理文件下载，支持IE浏览器
+                function downloadFile(filename) {
+                    // 对于IE浏览器，使用msSaveBlob方法
+                    if (window.navigator && window.navigator.msSaveBlob) {
+                        fetch(`/preview/${filename}`)
+                            .then(response => response.blob())
+                            .then(blob => {
+                                window.navigator.msSaveBlob(blob, decodeURIComponent(filename));
+                            })
+                            .catch(error => {
+                                console.error('下载失败:', error);
+                                alert('文件下载失败，请稍后再试。');
+                            });
+                    } else {
+                        // 对于现代浏览器，使用传统下载方式
+                        const link = document.createElement('a');
+                        link.href = `/preview/${filename}`;
+                        link.download = decodeURIComponent(filename);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                }
+                
                 // 根据文件类型渲染预览
                 if (isImage(ext)) {
                     container.innerHTML = `
                         <img src="/preview/${encodeURIComponent(filename)}" 
-                             class="image-preview" alt="${filename}" onload="adjustImageSize(this)">
+                             class="image-preview" alt="${encodeURIComponent(filename)}" onload="adjustImageSize(this)">
                     `;
                 } 
                 else if (ext === 'pdf') {
@@ -538,18 +606,56 @@
                     else if (ext === 'ogg') mimeType = 'video/ogg';
                     else if (ext === 'mov') mimeType = 'video/quicktime';
                     else if (ext === 'avi') mimeType = 'video/x-msvideo';
-                     
+                      
                     container.innerHTML = `
-                        <video controls class="video-player" preload="metadata">
+                        <video id="video-player" controls class="video-player" preload="metadata">
                             <source src="/preview/${encodeURIComponent(filename)}" type="${mimeType}">
                             <p>您的浏览器不支持视频播放。请尝试以下操作：</p>
                             <ul>
                                 <li>更新您的浏览器到最新版本</li>
                                 <li>尝试使用不同的浏览器</li>
-                                <li><a href="/preview/${encodeURIComponent(filename)}" download>下载文件</a>后使用本地播放器观看</li>
+                                <li><a href="/preview/${encodeURIComponent(filename)}" onclick="downloadFile('${encodeURIComponent(filename)}'); return false;">下载文件</a>后使用本地播放器观看</li>
                             </ul>
                         </video>
                     `;
+                    
+                    // 添加视频编码支持检测
+                    const videoElement = document.getElementById('video-player');
+                    videoElement.addEventListener('error', function() {
+                        // 检查是否是编码不支持的错误
+                        if (videoElement.error && videoElement.error.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
+                            const videoContainer = videoElement.parentElement;
+                            videoContainer.innerHTML = `
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    <strong>视频编码不支持</strong>
+                                    <p>您的浏览器可能不支持此视频的编码格式。这是常见的IE浏览器兼容性问题。</p>
+                                    <ul>
+                                        <li>建议使用Chrome、Firefox或Edge浏览器观看</li>
+                                        <li>或者<a href="/preview/${encodeURIComponent(filename)}" onclick="downloadFile('${encodeURIComponent(filename)}'); return false;">下载视频</a>后使用本地播放器（如VLC、Windows Media Player）观看</li>
+                                    </ul>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    // 对于MP4格式，额外检查H.264编码支持
+                    if (ext === 'mp4') {
+                        // 检查浏览器是否支持MP4/H.264编码
+                        const canPlayMP4 = videoElement.canPlayType('video/mp4; codecs="avc1.42E01E"');
+                        if (canPlayMP4 === '' || canPlayMP4 === 'no') {
+                            // IE浏览器可能支持MP4但编码支持有限，显示提示
+                            const videoContainer = videoElement.parentElement;
+                            const infoDiv = document.createElement('div');
+                            infoDiv.className = 'alert alert-info mt-2';
+                            infoDiv.innerHTML = `
+                                <i class="bi bi-info-circle"></i>
+                                <strong>编码兼容性提示</strong>
+                                <p>您的浏览器可能不完全支持此MP4视频的编码。如果视频无法播放，请下载后使用本地播放器观看。</p>
+                            `;
+                            videoContainer.appendChild(infoDiv);
+                        }
+                    }
                 } 
                 else if (isAudio(ext)) {
                     // 添加音频播放器
@@ -712,14 +818,35 @@
                 });
 }
                 else {
+                    // 为压缩文件和可执行文件提供更明确的提示
+                    let fileTypeMessage = '此文件类型不支持在线预览';
+                    let fileTypeClass = '';
+                    
+                    if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                        fileTypeMessage = '压缩文件不支持在线预览，请下载后解压查看';
+                        fileTypeClass = 'compressed-file';
+                    } else if (['exe', 'msi', 'dll', 'sys', 'com'].includes(ext)) {
+                        fileTypeMessage = '可执行文件不支持在线预览，请下载后运行';
+                        fileTypeClass = 'executable-file';
+                    } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
+                        fileTypeMessage = 'Office文档不支持在线预览，请下载后用相应软件打开';
+                        fileTypeClass = 'office-file';
+                    }
+                    
                     container.innerHTML = `
-                        <div class="unsupported-container">
+                        <div class="unsupported-container ${fileTypeClass}">
                             <i class="bi bi-file-earmark-x unsupported-icon"></i>
                             <h4>不支持在线预览</h4>
-                            <p class="text-muted">此文件类型不支持在线预览，请下载后查看</p>
+                            <p class="text-muted">${fileTypeMessage}</p>
                             <a href="/preview/${encodeURIComponent(filename)}" class="btn btn-primary mt-3">
                                 <i class="bi bi-download"></i> 下载文件
                             </a>
+                            <div class="mt-4 alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>文件名：</strong>${decodedFilename}
+                                <br>
+                                <strong>文件大小：</strong>${document.getElementById('file-size').textContent}
+                            </div>
                         </div>
                     `;
                 }

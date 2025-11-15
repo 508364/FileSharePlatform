@@ -85,11 +85,33 @@
     </style>
 </head>
 <body>
-    <div id="theme-toggle-container" style="position: absolute; top: 20px; right: 20px;">
-        <button id="theme-toggle" class="theme-toggle btn btn-sm">
+    <!-- 左下角深色模式切换控件 -->
+    <div class="bottom-left-controls">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-moon"></i> 深色模式
         </button>
     </div>
+    <!-- 左下角深色模式切换控件样式 -->
+    <style>
+        .bottom-left-controls {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            z-index: 1000;
+        }
+        
+        .bottom-left-controls button {
+            padding: 8px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .bottom-left-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 
     <div id="admin-login" class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background-color: var(--bg); color: var(--text);">
         <div class="card p-4" style="width: 400px;">
@@ -175,6 +197,8 @@
             })
             .then(data => {
                 if (data.status === 'success') {
+                    // 保存token到localStorage
+                    localStorage.setItem('admin_token', data.token);
                     // 登录成功，跳转管理后台
                     window.location.href = '/admin';
                 } else {

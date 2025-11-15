@@ -392,6 +392,7 @@
                     .then(res => res.json())
                     .then(data => {
                         if (data.disk) {
+                            // 直接使用返回的字节数
                             usedSpaceEl.textContent = formatBytes(data.disk.upload_used);
                             freeSpaceEl.textContent = formatBytes(data.disk.available);
                             const percent = Math.min(100, Math.round((data.disk.upload_used / data.disk.upload_total) * 100));

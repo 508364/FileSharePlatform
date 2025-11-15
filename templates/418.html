@@ -43,16 +43,23 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
             transition: background-color 0.3s, color 0.3s;
         }
         
         .error-container {
+            -ms-flex: 1;
             flex: 1;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
+            -ms-flex-pack: center;
             justify-content: center;
+            -ms-flex-align: center;
             align-items: center;
             padding: 40px 20px;
         }

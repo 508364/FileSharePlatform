@@ -243,6 +243,101 @@
             height: 12px;
         }
 
+        /* 开关控件样式 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* 深色模式下的开关控件 */
+        body.dark-mode .toggle-slider {
+            background-color: #444;
+        }
+
+        body.dark-mode input:checked + .toggle-slider {
+            background-color: var(--primary-light);
+        }
+
+        /* 左下角深色模式切换控件 */
+        .bottom-left-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 270px; /* 与侧边栏宽度对齐 */
+            z-index: 1000;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .theme-toggle-bottom {
+            background: white;
+            color: var(--dark);
+            border: 1px solid var(--border);
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .theme-toggle-bottom:hover {
+            background: var(--light);
+        }
+
+        body.dark-mode .theme-toggle-bottom {
+            background: var(--dark-card);
+            color: var(--dark-text);
+            border-color: var(--dark-border);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        body.dark-mode .theme-toggle-bottom:hover {
+            background: #334155;
+        }
+
         /* 头部样式 */
         .admin-header {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -327,54 +422,85 @@
             color: var(--primary);
         }
         
-        /* 导航栏 */
-        .admin-nav {
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 250px;
             background: white;
-            padding: 0 20px;
-            border-bottom: 1px solid var(--border);
-            overflow-x: auto;
-            white-space: nowrap;
-            position: sticky;
-            top: 60px;
-            z-index: 999;
+            border-right: 1px solid var(--border);
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            position: fixed;
+            top: 120px;
+            left: 0;
+            z-index: 998;
+            transition: var(--transition);
         }
         
-        .admin-nav ul {
-            display: flex;
+        .sidebar ul {
             list-style: none;
-            gap: 5px;
             margin: 0;
             padding: 0;
         }
         
-        .admin-nav a {
+        .sidebar a {
             color: var(--dark);
             text-decoration: none;
             font-weight: 500;
-            padding: 12px 16px;
+            padding: 15px 20px;
             display: block;
             transition: all 0.3s;
-            border-bottom: 3px solid transparent;
+            border-left: 3px solid transparent;
         }
         
-        .admin-nav a:hover {
+        .sidebar a:hover {
             color: var(--primary);
+            background-color: rgba(74, 118, 255, 0.05);
         }
         
-        .admin-nav a.active {
+        .sidebar a.active {
             color: var(--primary);
-            border-bottom: 3px solid var(--primary);
+            background-color: rgba(74, 118, 255, 0.1);
+            border-left: 3px solid var(--primary);
         }
         
-        .admin-nav a i {
-            margin-right: 8px;
+        .sidebar a i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* 深色模式下的侧边栏 */
+        body.dark-mode .sidebar {
+            background: var(--dark-header);
+            border-right-color: var(--dark-border);
+        }
+        
+        body.dark-mode .sidebar a {
+            color: var(--dark-text);
+        }
+        
+        body.dark-mode .sidebar a:hover {
+            color: var(--primary-light);
+            background-color: rgba(74, 118, 255, 0.1);
+        }
+        
+        body.dark-mode .sidebar a.active {
+            color: var(--primary-light);
+            background-color: rgba(74, 118, 255, 0.2);
+            border-left-color: var(--primary-light);
         }
         
         /* 主容器 */
-        .admin-container {
+        .main-content {
+            margin-left: 270px;
+            padding: 10px;
+            min-height: calc(100vh - 120px);
+            transition: var(--transition);
+        }
+        
+        .content-wrapper {
             max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 20px;
+            width: 100%;
         }
         
         /* 卡片网格布局 */
@@ -695,13 +821,12 @@
                 grid-template-columns: 1fr;
             }
             
-            .admin-nav ul {
-                gap: 0;
+            .sidebar {
+                width: 200px;
             }
             
-            .admin-nav a {
-                padding: 10px 12px;
-                font-size: 14px;
+            .main-content {
+                margin-left: 220px;
             }
             
             .stats-grid {
@@ -714,6 +839,7 @@
             }
             
             .admin-header {
+                -ms-flex-direction: column;
                 flex-direction: column;
                 gap: 15px;
                 padding: 15px;
@@ -730,16 +856,40 @@
                 font-size: 16px;
             }
             
-            .admin-nav a span {
-                display: none;
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                top: 0;
+                margin-top: 10px;
             }
             
-            .admin-nav a i {
-                margin-right: 0;
-                font-size: 18px;
+            .sidebar ul {
+                display: flex;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            .sidebar a {
+                padding: 10px 15px;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .sidebar a.active {
+                border-left: none;
+                border-bottom: 3px solid var(--primary);
+                background-color: transparent;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                margin-top: 20px;
+                padding: 15px;
             }
             
             .file-item {
+                -ms-flex-direction: column;
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
@@ -753,8 +903,11 @@
 
         /* 外观设置样式 */
         .appearance-preview {
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
+            -ms-flex-align: center;
             align-items: center;
             margin: 20px 0;
             padding: 15px;
@@ -802,9 +955,6 @@
     <header class="admin-header">
         <h1><i class="bi bi-cogs"></i> 网络文件共享平台 - 管理员控制面板</h1>
         <div class="header-controls">
-            <button id="theme-toggle" class="theme-toggle">
-                <i class="bi bi-moon btn-sm"></i> 深色模式
-            </button>
             <button class="logout-btn" onclick="location.href='/error_management'">
                 <i class="bi bi-exclamation-triangle btn-sm"></i> 错误页面管理
             </button>
@@ -822,18 +972,21 @@
         当前共享目录: {{ share_folder }}
     </div>
     
-    <nav class="admin-nav">
-        <ul>
-            <li><a href="#dashboard" class="nav-link active" data-section="dashboard"><i class="bi bi-speedometer2"></i> <span>仪表盘</span></a></li>
-            <li><a href="#space" class="nav-link" data-section="space"><i class="bi bi-hdd"></i> <span>空间管理</span></a></li>
-            <li><a href="#security" class="nav-link" data-section="security"><i class="bi bi-shield-lock"></i> <span>安全设置</span></a></li>
-            <li><a href="#network" class="nav-link" data-section="network"><i class="bi bi-wifi"></i> <span>网络配置</span></a></li>
-            <li><a href="#files" class="nav-link" data-section="files"><i class="bi bi-files"></i> <span>文件管理</span></a></li>
-            <li><a href="#chmlfrp" class="nav-link" data-section="chmlfrp"><i class="bi bi-box-arrow-in-up-right"></i> <span>ChmlFrp内网穿透</span></a></li>
-        </ul>
-    </nav>
-    
-    <div class="admin-container">
+    <div class="layout-wrapper">
+        <nav class="sidebar">
+            <ul>
+                <li><a href="#dashboard" class="nav-link active" data-section="dashboard"><i class="bi bi-speedometer2"></i> <span>仪表盘</span></a></li>
+                <li><a href="#space" class="nav-link" data-section="space"><i class="bi bi-hdd"></i> <span>空间管理</span></a></li>
+                <li><a href="#security" class="nav-link" data-section="security"><i class="bi bi-shield-lock"></i> <span>安全设置</span></a></li>
+                <li><a href="#network" class="nav-link" data-section="network"><i class="bi bi-wifi"></i> <span>网络配置</span></a></li>
+                <li><a href="#files" class="nav-link" data-section="files"><i class="bi bi-files"></i> <span>文件管理</span></a></li>
+
+                <li><a href="#update" class="nav-link" data-section="update"><i class="bi bi-arrow-down-circle"></i> <span>系统更新</span></a></li>
+            </ul>
+        </nav>
+        
+        <main class="main-content">
+            <div class="content-wrapper">
         <div class="flash-messages">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -927,90 +1080,7 @@
             </div>
         </section>
         
-        <!-- ChmlFrp内网穿透部分 -->
-        <section id="chmlfrp" class="section-content">
-            <div class="dashboard-card">
-                <h2><i class="bi bi-box-arrow-in-up-right"></i> ChmlFrp内网穿透配置</h2>
-                <div class="config-form">
-                    <div class="form-group">
-                        <label for="chmlfrp_token">用户Token</label>
-                        <input type="text" id="chmlfrp_token" name="chmlfrp_token" 
-                               value="{{ system_config.chmlfrp_token or '' }}" placeholder="请输入您的ChmlFrp Token">
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3><i class="bi bi-tunnel"></i> 已创建隧道列表</h3>
-                        <button id="load-tunnel-list" class="btn btn-secondary">
-                            <i class="bi bi-refresh"></i> 加载隧道列表
-                        </button>
-                    </div>
-                    <div id="tunnel-list" style="margin-top: 15px; display: flex; flex-wrap: wrap; gap: 10px;">
-                        <p>请先输入Token并点击加载隧道列表</p>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-                    <h3><i class="bi bi-cog"></i> 隧道配置</h3>
-                    <div id="selected-tunnel-info" style="margin-top: 10px; padding: 15px; background-color: var(--secondary-bg); border-radius: 6px;">
-                        请先选择一个隧道
-                    </div>
-                    <div style="margin-top: 15px; display: flex; gap: 10px;">
-                        <button id="generate-frpc-config" class="btn btn-primary" disabled>
-                            <i class="bi bi-terminal"></i> 生成快捷启动命令
-                        </button>
-                        <button id="start-tunnel" class="btn btn-success" disabled>
-                            <i class="bi bi-play-circle"></i> 启动隧道
-                        </button>
-                        <button id="stop-tunnel" class="btn btn-danger" disabled>
-                            <i class="bi bi-stop-circle"></i> 停止隧道
-                        </button>
-                    </div>
-                    
-                    <!-- ChmlFrp状态显示 -->
-                    <div id="chmlfrp-status" style="margin-top: 15px; padding: 10px; background-color: var(--secondary-bg); border-radius: 6px;">
-                      <span><i class="bi bi-circle-fill" style="color: #6c757d; margin-right: 5px;"></i></span>
-                      <span>ChmlFrp状态：未知</span>
-                      <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        检查状态
-                      </button>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px;">
-                    <p style="margin: 0;"><i class="bi bi-exclamation-triangle"></i> 获取真实IP创建隧道时添加额外参数：<code>proxy_protocol_version = v2</code>即可</p>
-                </div>
-                
-                <!-- 日志显示框 -->
-                <div id="chmlfrp-log-container" style="margin-top: 20px; display: none;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="margin: 0;"><i class="bi bi-file-text"></i> ChmlFrp运行日志</h3>
-                    <div>
-                      <button id="refresh-log" style="padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
-                        刷新日志
-                      </button>
-                      <button id="clear-log" style="padding: 5px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        清空日志
-                      </button>
-                    </div>
-                  </div>
-                  <div id="chmlfrp-log" style="background-color: var(--secondary-bg); border: 1px solid #ddd; border-radius: 6px; padding: 10px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
-                    <p>日志将在这里显示...</p>
-                  </div>
-                </div>
-                
-                <div style="margin-top: 20px;">
-                    <h3><i class="bi bi-download"></i> Frpc下载</h3>
-                    <p>您可以从以下链接访问ChmlFrp官网下载适合您系统的客户端：</p>
-                    <a href="https://panel.chmlfrp.cn/tunnel/download" 
-                       target="_blank" class="btn btn-success" style="margin-top: 10px;">
-                        <i class="bi bi-globe"></i> 访问ChmlFrp官网下载
-                    </a>
-                    <p style="margin-top: 10px; color: #666;">提示：请根据您的操作系统类型(Windows/Linux/MacOS等)和硬件架构(amd64/arm64等)选择合适的版本下载。</p>
-                </div>
-            </div>
-        </section>
+
         
         <!-- 空间管理部分 -->
         <section id="space" class="section-content">
@@ -1070,12 +1140,13 @@
                                    value="{{ system_config.geetest_key or '' }}" placeholder="请输入极验密钥">
                         </div>
                         
-                        <div class="form-group">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="offlineDownloadEnabled" name="offline_download_enabled"
+                        <div class="form-group" style="display: flex; align-items: center; justify-content: space-between;">
+                            <label for="offlineDownloadEnabled">启用离线下载功能</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="offlineDownloadEnabled" name="offline_download_enabled"
                                        {% if system_config.offline_download_enabled %}checked{% endif %}>
-                                <label class="form-check-label" for="offlineDownloadEnabled">启用离线下载功能</label>
-                            </div>
+                                <span class="toggle-slider"></span>
+                            </label>
                         </div>
                         
                         <div class="form-group">
@@ -1198,6 +1269,83 @@
                 </div>
             </div>
         </section>
+        
+        <!-- 系统更新部分 -->
+        <section id="update" class="section-content">
+            <div class="dashboard-card">
+                <h2><i class="bi bi-arrow-down-circle"></i> 系统更新</h2>
+                <p style="margin-bottom: 20px; color: var(--gray);">检查并应用系统更新，保持平台最新状态</p>
+                
+                <!-- 当前版本信息 -->
+                <div style="margin-bottom: 30px; padding: 20px; background-color: var(--secondary-bg); border-radius: 8px;">
+                    <h3 style="margin-bottom: 15px;"><i class="bi bi-info-circle"></i> 当前版本信息</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <strong>系统版本:</strong><br>
+                            <span id="current-version">v1.0.0</span>
+                        </div>
+                        <div>
+                            <strong>更新状态:</strong><br>
+                            <span id="update-status">检查中...</span>
+                        </div>
+                        <div>
+                            <strong>最后检查:</strong><br>
+                            <span id="last-check">未检查</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 更新操作按钮 -->
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 30px;">
+                    <button id="check-update-btn" class="btn btn-primary">
+                        <i class="bi bi-search"></i> 检查更新
+                    </button>
+                    <button id="download-update-btn" class="btn btn-success" style="display: none;">
+                        <i class="bi bi-download"></i> 下载更新
+                    </button>
+                    <button id="apply-update-btn" class="btn btn-warning" style="display: none;">
+                        <i class="bi bi-check-circle"></i> 应用更新
+                    </button>
+                    <button id="restart-server-btn" class="btn btn-info" style="display: none;">
+                        <i class="bi bi-arrow-clockwise"></i> 重启服务
+                    </button>
+                </div>
+                
+                <!-- 更新进度显示 -->
+                <div id="update-progress" style="display: none; margin-bottom: 20px;">
+                    <div style="margin-bottom: 10px;">
+                        <strong>更新进度:</strong> <span id="progress-text">0%</span>
+                    </div>
+                    <div style="width: 100%; background-color: #e9ecef; border-radius: 4px; overflow: hidden;">
+                        <div id="progress-bar" style="width: 0%; height: 20px; background-color: var(--primary); transition: width 0.3s;"></div>
+                    </div>
+                </div>
+                
+                <!-- 更新日志 -->
+                <div id="update-log" style="background-color: var(--secondary-bg); border: 1px solid var(--border); border-radius: 6px; padding: 15px; max-height: 300px; overflow-y: auto; font-family: monospace; font-size: 13px;">
+                    <p style="color: var(--gray); margin: 0;">等待操作开始...</p>
+                </div>
+                
+                <!-- 更新说明 -->
+                <div style="margin-top: 30px; padding: 20px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px;">
+                    <h4 style="margin-top: 0;"><i class="bi bi-exclamation-triangle"></i> 更新说明</h4>
+                    <ul style="margin-bottom: 0;">
+                        <li>系统会在更新期间显示维护页面</li>
+                        <li>更新前建议先备份重要数据</li>
+                        <li>确保有稳定的网络连接</li>
+                        <li>更新完成后服务会自动重启</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+</div>
+    </div>
+    
+    <!-- 左下角深色模式切换控件 -->
+    <div class="bottom-left-controls">
+        <button id="theme-toggle" class="theme-toggle-bottom">
+            <i class="bi bi-moon btn-sm"></i> 深色模式
+        </button>
     </div>
 
     <script>
@@ -1323,6 +1471,247 @@
                     showMessage('保存失败: ' + error.message, 'error');
                 });
             });
+            
+            // 系统更新功能
+            const checkUpdateBtn = document.getElementById('check-update-btn');
+            const startUpdateBtn = document.getElementById('start-update-btn');
+            const currentVersionSpan = document.getElementById('current-version');
+            const updateStatusSpan = document.getElementById('update-status');
+            const lastCheckSpan = document.getElementById('last-check');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const updateLog = document.getElementById('update-log');
+            const updateProgress = document.getElementById('update-progress');
+            
+            // 页面加载时获取当前版本信息
+            const timestamp = Date.now();
+            fetch(`/api/system/config?t=${timestamp}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('版本信息响应:', data); // 调试日志
+                    // 适配实际的API响应格式：直接返回配置数据
+                    if (data && data.app_version) {
+                        const currentVersion = data.app_version;
+                        currentVersionSpan.textContent = 'v' + currentVersion;
+                        console.log('设置版本显示:', 'v' + currentVersion);
+                    } else {
+                        throw new Error('版本信息格式错误');
+                    }
+                })
+                .catch(error => {
+                    console.error('获取版本信息失败:', error);
+                    currentVersionSpan.textContent = 'v1.9'; // 备用版本号
+                });
+            // 检查更新
+            if (checkUpdateBtn) {
+                checkUpdateBtn.addEventListener('click', function() {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="bi bi-hourglass-split"></i> 检查中...';
+                    updateLog.innerHTML = '<p style="color: var(--primary);">正在检查更新...</p>';
+                    updateStatusSpan.textContent = '检查中...';
+                    lastCheckSpan.textContent = new Date().toLocaleString();
+                    
+                    fetch('/api/check_update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Admin-Token': localStorage.getItem('admin_token')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('检查更新响应:', data); // 调试日志
+                        
+                        // 添加安全检查，防止空值错误
+                        if (!data) {
+                            throw new Error('响应数据为空');
+                        }
+                        
+                        // 根据新的API响应格式处理
+                        if (data.status === 'update_available') {
+                            updateStatusSpan.textContent = '发现新版本';
+                            updateLog.innerHTML = `
+                                <p style="color: var(--warning);">发现新版本: ${data.latest_version}</p>
+                                <p style="color: var(--gray);">当前版本: v${data.current_version || '1.9'}</p>
+                                <p style="color: var(--gray);">${data.message}</p>
+                                <div style="margin-top: 10px;">
+                                    <strong>更新内容:</strong><br>
+                                    ${data.changelog || '无更新说明'}
+                                </div>
+                            `;
+                            if (startUpdateBtn) {
+                                startUpdateBtn.style.display = 'inline-block';
+                                startUpdateBtn.disabled = false;
+                            }
+                        } else if (data.status === 'latest_version') {
+                            updateStatusSpan.textContent = '已是最新版本';
+                            updateLog.innerHTML = '<p style="color: var(--success);">当前已是最新版本</p>';
+                            if (startUpdateBtn) {
+                                startUpdateBtn.style.display = 'none';
+                            }
+                        } else if (data.status === 'no_update') {
+                            updateStatusSpan.textContent = '当前已是最新版本';
+                            updateLog.innerHTML = `
+                                <p style="color: var(--success);">${data.message || '当前已是最新版本'}</p>
+                                <p style="color: var(--gray);">当前版本: v${data.current_version || '1.9'}</p>
+                            `;
+                            if (startUpdateBtn) {
+                                startUpdateBtn.style.display = 'none';
+                            }
+                        } else if (data.status === 'development_version') {
+                            updateStatusSpan.textContent = '开发版';
+                            const latestInfo = data.latest_version ? `（最新官方版本：v${data.latest_version}）` : '';
+                            const releaseNotes = data.release_notes || data.changelog || '当前版本高于官方版本（开发版）';
+                            updateLog.innerHTML = `
+                                <p style="color: var(--info);">当前版本高于官方版本 ${latestInfo}</p>
+                                <div style="margin-top: 10px;">
+                                    <strong>官方最新版本更新内容:</strong><br>
+                                    <div style="margin-top: 5px; padding: 10px; background-color: var(--secondary-bg); border-radius: 6px; max-height: 200px; overflow-y: auto;">
+                                        ${releaseNotes.replace(/\r\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `;
+                            if (startUpdateBtn) {
+                                startUpdateBtn.style.display = 'none';
+                            }
+                        } else if (data.status === 'check_failed') {
+                            updateStatusSpan.textContent = '检查失败';
+                            updateLog.innerHTML = `<p style="color: var(--error);">${data.message}</p>`;
+                            if (startUpdateBtn) {
+                                startUpdateBtn.style.display = 'none';
+                            }
+                        } else {
+                            updateStatusSpan.textContent = '检查失败';
+                            updateLog.innerHTML = `<p style="color: var(--error);">检查失败: ${data.message || '未知错误'}</p>`;
+                            if (startUpdateBtn) {
+                                startUpdateBtn.style.display = 'none';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('网络错误:', error); // 调试日志
+                        updateStatusSpan.textContent = '网络错误';
+                        updateLog.innerHTML = `<p style="color: var(--error);">网络错误: ${error.message}</p>`;
+                        if (startUpdateBtn) {
+                            startUpdateBtn.style.display = 'none';
+                        }
+                    })
+                    .finally(() => {
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-arrow-clockwise"></i> 检查更新';
+                    });
+                });
+            }
+            
+            // 开始更新
+            if (startUpdateBtn) {
+                startUpdateBtn.addEventListener('click', function() {
+                    if (!confirm('确定要开始更新吗？更新过程可能需要几分钟时间。')) {
+                        return;
+                    }
+                    
+                    this.disabled = true;
+                    this.innerHTML = '<i class="bi bi-hourglass-split"></i> 更新中...';
+                    if (checkUpdateBtn) {
+                        checkUpdateBtn.disabled = true;
+                    }
+                    
+                    progressBar.style.width = '0%';
+                    progressText.textContent = '0%';
+                    updateLog.innerHTML = '<p style="color: var(--primary);">开始更新...</p>';
+                    
+                    // 开始更新请求
+                    fetch('/api/start_update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Admin-Token': localStorage.getItem('admin_token')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('开始更新响应:', data); // 调试日志
+                        
+                        // 添加安全检查，防止空值错误
+                        if (!data) {
+                            throw new Error('响应数据为空');
+                        }
+                        if (data.status === 'success') {
+                            updateLog.innerHTML = '<p style="color: var(--success);">更新完成！服务将在几秒后重启</p>';
+                            showMessage('更新完成，正在重启服务...', 'success');
+                            
+                            // 5秒后刷新页面
+                            setTimeout(() => {
+                                location.reload();
+                            }, 5000);
+                        } else {
+                            updateLog.innerHTML = `<p style="color: var(--error);">更新失败: ${data.message}</p>`;
+                            showMessage(`更新失败: ${data.message}`, 'error');
+                            
+                            // 恢复按钮状态
+                            this.disabled = false;
+                            this.innerHTML = '<i class="bi bi-arrow-down-circle"></i> 开始更新';
+                            if (checkUpdateBtn) {
+                                checkUpdateBtn.disabled = false;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        updateLog.innerHTML = `<p style="color: var(--error);">网络错误: ${error.message}</p>`;
+                        showMessage(`网络错误: ${error.message}`, 'error');
+                        
+                        // 恢复按钮状态
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-arrow-down-circle"></i> 开始更新';
+                        if (checkUpdateBtn) {
+                            checkUpdateBtn.disabled = false;
+                        }
+                    });
+                    
+                    // 模拟进度更新（实际项目中应该通过WebSocket或轮询获取真实进度）
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 15;
+                        if (progress > 90) {
+                            clearInterval(progressInterval);
+                            return;
+                        }
+                        
+                        progressBar.style.width = progress + '%';
+                        progressText.textContent = Math.round(progress) + '%';
+                        
+                        // 添加进度日志
+                        const logMessages = [
+                            '正在下载更新包...',
+                            '正在验证文件完整性...',
+                            '正在备份当前版本...',
+                            '正在应用更新...',
+                            '正在重启服务...'
+                        ];
+                        
+                        const messageIndex = Math.floor(progress / 20);
+                        if (messageIndex < logMessages.length) {
+                            updateLog.innerHTML += `<p style="color: var(--primary);">${logMessages[messageIndex]}</p>`;
+                            updateLog.scrollTop = updateLog.scrollHeight;
+                        }
+                    }, 1000);
+                });
+            }
             
             // 显示消息
             function showMessage(message, type) {
@@ -1558,7 +1947,7 @@
                             <option value="system">系统日志</option>
                             <option value="api">API日志</option>
                             <option value="user">用户日志</option>
-                            <option value="frp">FRP日志</option>
+        
                         </select>
                         <label for="log-days" style="margin-left: 20px; margin-right: 10px;">查看天数：</label>
                         <select id="log-days" style="padding: 5px;">
@@ -1599,654 +1988,27 @@
                 });
             });
             
-            // 保存ChmlFrp配置
-            document.getElementById('save-chmlfrp-config')?.addEventListener('click', function() {
-                const token = document.getElementById('chmlfrp_token').value;
-                
-                if (!token) {
-                    showMessage('请输入用户Token', 'error');
-                    return;
-                }
-                
-                fetch('/api/update_chmlfrp_config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Admin-Token': localStorage.getItem('admin_token')
-                    },
-                    body: JSON.stringify({
-                        chmlfrp_token: token
-                    })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        showMessage('ChmlFrp配置保存成功！', 'success');
-                    } else {
-                        showMessage('ChmlFrp配置保存失败，请重试', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showMessage('网络错误，请重试', 'error');
-                });
-            });
+
             
             // 全局变量
             let logRefreshInterval = null;
             let logLines = [];
             const MAX_LOG_LINES = 500;
             
-            // 页面加载时检查ChmlFrp状态
-            document.addEventListener('DOMContentLoaded', function() {
-              checkChmlfrpStatus();
-            });
+
             
-            // 检查ChmlFrp状态
-            function checkChmlfrpStatus() {
-                fetch('/api/check_chmlfrp_status', {
-                    method: 'GET',
-                    headers: {
-                        'X-Admin-Token': localStorage.getItem('admin_token')
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    const statusDiv = document.getElementById('chmlfrp-status');
-                    if (statusDiv) {
-                      if (data.success && data.data && data.data.status === 'running') {
-                        statusDiv.innerHTML = `
-                          <span><i class="bi bi-circle-fill" style="color: #28a745; margin-right: 5px;"></i></span>
-                          <span>ChmlFrp状态：运行中</span>
-                          <span style="margin-left: 10px; font-size: 12px; color: #6c757d;">隧道ID: ${data.data.tunnel_id || 'unknown'}</span>
-                          <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            检查状态
-                          </button>
-                        `;
-                        // 如果有活跃隧道，更新window.activeTunnel
-                        if (data.data.tunnel_id) {
-                          window.activeTunnel = data.data.tunnel_id;
-                          // 加载隧道列表并高亮显示当前活跃的隧道
-                          const loadTunnelBtn = document.getElementById('load-tunnel-list');
-                          if (loadTunnelBtn && !loadTunnelBtn.disabled) {
-                            loadTunnelBtn.click();
-                          }
-                        }
-                      } else {
-                        statusDiv.innerHTML = `
-                          <span><i class="bi bi-circle-fill" style="color: #dc3545; margin-right: 5px;"></i></span>
-                          <span>ChmlFrp状态：未运行</span>
-                          <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            检查状态
-                          </button>
-                        `;
-                      }
-                      // 重新绑定事件
-                      document.getElementById('check-chmlfrp-status')?.addEventListener('click', checkChmlfrpStatus);
-                    }
-                })
-                .catch(error => {
-                    console.error('检查ChmlFrp状态失败:', error);
-                    const statusDiv = document.getElementById('chmlfrp-status');
-                    if (statusDiv) {
-                      statusDiv.innerHTML = `
-                        <span><i class="bi bi-circle-fill" style="color: #ffc107; margin-right: 5px;"></i></span>
-                        <span>ChmlFrp状态：检查失败</span>
-                        <button id="check-chmlfrp-status" style="margin-left: 15px; padding: 5px 10px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                          重试
-                        </button>
-                      `;
-                      // 重新绑定事件
-                      document.getElementById('check-chmlfrp-status')?.addEventListener('click', checkChmlfrpStatus);
-                    }
-                });
-            }
+
             
-            // 绑定检查状态按钮事件
-            document.getElementById('check-chmlfrp-status')?.addEventListener('click', checkChmlfrpStatus);
+
+
             
-            // 加载隧道列表
-            document.getElementById('load-tunnel-list')?.addEventListener('click', function() {
-                const token = document.getElementById('chmlfrp_token').value;
-                
-                if (!token) {
-                    showMessage('请先输入ChmlFrp Token', 'error');
-                    return;
-                }
-                
-                const tunnelList = document.getElementById('tunnel-list');
-                tunnelList.innerHTML = '<div class="loading-state"><p>正在加载隧道列表...</p></div>';
-                
-                fetch('/api/check_chmlfrp_status', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Admin-Token': localStorage.getItem('admin_token')
-                    },
-                    body: JSON.stringify({
-                        token: token
-                    })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        throw new Error('加载失败');
-                    }
-                })
-                .then(data => {
-                    // 添加调试信息
-                    console.log('API响应数据:', data);
-                    
-                    tunnelList.innerHTML = '';
-                    
-                    // 检查是否有隧道数据
-                    let tunnelData = [];
-                    if (data.tunnels && Array.isArray(data.tunnels)) {
-                        // 使用简化格式：tunnels 数组
-                        tunnelData = data.tunnels;
-                    } else if (data.tunnel_list && data.tunnel_list.data && Array.isArray(data.tunnel_list.data)) {
-                        // 兼容旧格式：tunnel_list.data 数组
-                        tunnelData = data.tunnel_list.data;
-                    }
-                    
-                    if (tunnelData.length > 0) {
-                        // 显示用户信息
-                        if (data.user_info && data.user_info.data) {
-                            const userInfo = data.user_info.data;
-                            const userInfoCard = document.createElement('div');
-                            userInfoCard.className = 'user-info-card';
-                            userInfoCard.style.padding = '15px';
-                            userInfoCard.style.backgroundColor = 'var(--secondary-bg)';
-                            userInfoCard.style.borderRadius = '6px';
-                            userInfoCard.style.marginBottom = '20px';
-                            userInfoCard.style.display = 'flex';
-                            userInfoCard.style.alignItems = 'center';
-                            userInfoCard.style.gap = '15px';
-                            
-                            userInfoCard.innerHTML = `
-                                <div class="user-avatar" style="width: 50px; height: 50px; border-radius: 50%; background-color: var(--primary-color); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                                    ${userInfo.username ? userInfo.username.charAt(0).toUpperCase() : 'U'}
-                                </div>
-                                <div>
-                                    <h4 style="margin: 0;">用户: ${userInfo.username || '未知'}</h4>
-                                    <p style="margin: 5px 0; font-size: 14px;">等级: ${userInfo.usergroup || '免费用户'}</p>
-                                    <p style="margin: 0; font-size: 14px;">剩余积分: ${userInfo.integral || 0}</p>
-                                </div>
-                            `;
-                            
-                            tunnelList.appendChild(userInfoCard);
-                        }
-                        
-                        // 显示隧道列表
-                        const tunnelGrid = document.createElement('div');
-                        tunnelGrid.style.display = 'grid';
-                        tunnelGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                        tunnelGrid.style.gap = '15px';
-                        tunnelGrid.style.marginBottom = '20px';
-                        
-                        tunnelData.forEach(tunnel => {
-                            const tunnelCard = document.createElement('div');
-                            tunnelCard.className = 'tunnel-card';
-                            tunnelCard.dataset.tunnelId = tunnel.id;
-                            tunnelCard.dataset.tunnelName = tunnel.name || tunnel.id;
-                            tunnelCard.dataset.tunnelType = tunnel.type || 'tcp';
-                            tunnelCard.dataset.localIp = tunnel.localip || tunnel.local_ip || '127.0.0.1';
-                            tunnelCard.dataset.localPort = tunnel.dorp || tunnel.local_port || '5000';
-                            if (tunnel.nport || tunnel.remote_port) tunnelCard.dataset.remotePort = tunnel.nport || tunnel.remote_port;
-                            
-                            // 设置样式
-                            tunnelCard.style.padding = '15px';
-                            tunnelCard.style.backgroundColor = 'var(--secondary-bg)';
-                            tunnelCard.style.border = '1px solid #ddd';
-                            tunnelCard.style.borderRadius = '6px';
-                            tunnelCard.style.cursor = 'pointer';
-                            tunnelCard.style.transition = 'all 0.3s ease';
-                            
-                            // 检查是否已有隧道在运行，如果有，禁用其他隧道的点击事件
-                            if (window.activeTunnel && window.activeTunnel !== tunnel.id) {
-                                tunnelCard.style.opacity = '0.6';
-                                tunnelCard.style.cursor = 'not-allowed';
-                            }
-                            
-                            // 隧道状态颜色
-                            const stateColor = tunnel.state === 'true' || tunnel.state === true ? '#28a745' : '#dc3545';
-                            const nodeStateColor = tunnel.nodestate === 'online' ? '#28a745' : '#6c757d';
-                            
-                            tunnelCard.innerHTML = `
-                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                                    <h4 style="margin: 0;">${tunnel.name || tunnel.id}</h4>
-                                    <span style="background-color: ${stateColor}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
-                                        ${tunnel.state === 'true' || tunnel.state === true ? '在线' : '离线'}
-                                    </span>
-                                </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
-                                    <div>
-                                        <span style="color: #666;">类型:</span> ${tunnel.type || '获取失败'}
-                                    </div>
-                                    <div>
-                                        <span style="color: #666;">节点:</span> <span style="color: ${nodeStateColor};">${tunnel.node || '获取失败'}</span>
-                                    </div>
-                                    <div>
-                                        <span style="color: #666;">本地IP:</span> ${tunnel.localip || tunnel.local_ip || '获取失败'}
-                                    </div>
-                                    <div>
-                                        <span style="color: #666;">本地端口:</span> ${tunnel.dorp || tunnel.local_port || '获取失败'}
-                                    </div>
-                                    <div style="grid-column: 1 / -1;">
-                                        <span style="color: #666;">远程地址:</span> ${tunnel.ip || 'unknown'}:${tunnel.nport || tunnel.remote_port || 'unknown'}
-                                    </div>
-                                </div>
-                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <div>入站流量: ${formatTraffic(tunnel.today_traffic_in || 0)}</div>
-                                        <div>出站流量: ${formatTraffic(tunnel.today_traffic_out || 0)}</div>
-                                    </div>
-                                    ${tunnel.uptime ? `<div style="margin-top: 4px;">创建时间: ${formatDate(tunnel.uptime)}</div>` : ''}
-                                </div>
-                            `;
-                            
-                            tunnelCard.addEventListener('click', function() {
-                                // 移除其他卡片的选中状态
-                                document.querySelectorAll('.tunnel-card').forEach(card => {
-                                    card.style.borderColor = '#ddd';
-                                    card.style.boxShadow = 'none';
-                                });
-                                // 添加当前卡片的选中状态
-                                this.style.borderColor = '#007bff';
-                                this.style.boxShadow = '0 0 0 2px rgba(0, 123, 255, 0.25)';
-                                
-                                // 更新选中隧道信息
-                                const tunnelName = this.dataset.tunnelName;
-                                const tunnelType = this.dataset.tunnelType;
-                                const localIp = this.dataset.localIp;
-                                const localPort = this.dataset.localPort;
-                                const remotePort = this.dataset.remotePort;
-                                
-                                const selectedTunnelInfo = document.getElementById('selected-tunnel-info');
-                                selectedTunnelInfo.innerHTML = `
-                                    <h4 style="margin-top: 0;">选中的隧道</h4>
-                                    <p><strong>节点:</strong> ${tunnel.node}</p>
-                                    <p><strong>隧道名称:</strong> ${tunnelName}</p>
-                                    <p><strong>隧道类型:</strong> ${tunnelType}</p>
-                                    <p><strong>本地IP:</strong> ${localIp}</p>
-                                    <p><strong>本地端口:</strong> ${localPort}</p>
-                                    ${remotePort ? `<p><strong>远程端口:</strong> ${remotePort}</p>` : ''}
-                                `;
-                                
-                                // 禁用生成配置按钮和启动隧道按钮
-                                document.getElementById('generate-frpc-config').disabled = false;
-                                document.getElementById('start-tunnel').disabled = false;
-                                
-                                // 如果有隧道正在运行且不是当前选中的隧道，则禁用当前隧道的选择
-                                if (window.activeTunnel && window.activeTunnel !== tunnel.id) {
-                                    this.style.opacity = '0.6';
-                                    this.style.cursor = 'not-allowed';
-                                    document.getElementById('start-tunnel').disabled = true;
-                                }
-                            });
-                            
-                            tunnelGrid.appendChild(tunnelCard);
-                        });
-                        
-                        tunnelList.appendChild(tunnelGrid);
-                    } else {
-                        tunnelList.innerHTML = `
-                            <div class="no-tunnels">
-                                <p>未找到已创建的隧道</p>
-                                <button id="create-tunnel-guide" style="margin-top: 10px; padding: 8px 16px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                    查看创建隧道指南
-                                </button>
-                            </div>
-                        `;
-                        
-                        // 添加指南按钮事件
-                        document.getElementById('create-tunnel-guide')?.addEventListener('click', function() {
-                            showModal('创建隧道指南', `
-                                <ol style="text-align: left;">
-                                    <li>访问 ChmlFrp 官方网站</li>
-                                    <li>注册并登录账号</li>
-                                    <li>创建新的隧道配置</li>
-                                    <li>获取隧道的 Token 信息</li>
-                                    <li>在本页面输入 Token 并刷新列表</li>
-                                </ol>
-                                <p style="margin-top: 15px;">注意：创建隧道可能需要消耗积分，请确保您的账号有足够积分。</p>
-                            `, 'html');
-                        });
-                    }
-                    
-                    showMessage('隧道列表加载成功', 'success');
-                })
-                .catch(error => {
-                    console.error('加载隧道列表错误:', error);
-                    tunnelList.innerHTML = `
-                        <div class="error-state">
-                            <p>加载隧道列表失败</p>
-                            <p style="font-size: 14px; color: #666;">${error.message || '未知错误'}</p>
-                            <button onclick="document.getElementById('load-tunnel-list').click()" style="margin-top: 10px; padding: 8px 16px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                重试
-                            </button>
-                        </div>
-                    `;
-                    showMessage('加载隧道列表失败', 'error');
-                });
-            });
+
             
-            // 启动隧道
-                    document.getElementById('start-tunnel')?.addEventListener('click', function() {
-                        // 检查是否已有隧道在运行
-                        if (window.activeTunnel) {
-                            showMessage('已有隧道在运行，请先停止当前隧道', 'error');
-                            return;
-                        }
-                        
-                        // 获取选中的隧道卡片
-                        let selectedTunnel = null;
-                        const tunnelCards = document.querySelectorAll('.tunnel-card');
-                        for (let i = 0; i < tunnelCards.length; i++) {
-                            if (tunnelCards[i].style.borderColor === 'rgb(0, 123, 255)' || 
-                                tunnelCards[i].style.borderColor === '#007bff') {
-                                selectedTunnel = tunnelCards[i];
-                                break;
-                            }
-                        }
-                        
-                        if (!selectedTunnel) {
-                            showMessage('请先选择一个隧道', 'error');
-                            return;
-                        }
-                        
-                        const token = document.getElementById('chmlfrp_token').value;
-                        const tunnelId = selectedTunnel.dataset.tunnelId;
-                        const tunnelName = selectedTunnel.dataset.tunnelName;
-                        
-                        if (!token) {
-                            showMessage('请先输入ChmlFrp Token', 'error');
-                            return;
-                        }
-                        
-                        // 显示加载状态
-                        const originalText = this.textContent;
-                        this.textContent = '启动中...';
-                        this.disabled = true;
-                
-                fetch('/api/start_chmlfrp_tunnel', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Admin-Token': localStorage.getItem('admin_token')
-                    },
-                    body: JSON.stringify({
-                        token: token,
-                        tunnel_id: tunnelId,
-                        tunnel_name: tunnelName
-                    })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        throw new Error('启动失败');
-                    }
-                })
-                .then(data => {
-                            if (data.success) {
-                                showMessage('隧道启动成功', 'success');
-                                // 禁用启动按钮，启用停止按钮
-                                this.disabled = true;
-                                document.getElementById('stop-tunnel').disabled = false;
-                                
-                                // 设置活跃隧道状态
-                                window.activeTunnel = tunnelId;
-                                
-                                // 禁用其他隧道的选择
-                                tunnelCards.forEach(card => {
-                                    if (card.dataset.tunnelId !== tunnelId) {
-                                        card.style.opacity = '0.6';
-                                        card.style.cursor = 'not-allowed';
-                                    }
-                                });
-                                
-                                // 显示日志容器
-                                const logContainer = document.getElementById('chmlfrp-log-container');
-                                if (logContainer) {
-                                    logContainer.style.display = 'block';
-                                    // 加载并显示初始日志
-                                    loadChmlfrpLog();
-                                    // 开始自动刷新日志
-                                    startLogRefresh();
-                                }
-                            } else {
-                                showMessage('隧道启动失败: ' + data.message, 'error');
-                            }
-                        })
-                .catch(error => {
-                    console.error('启动隧道错误:', error);
-                    showMessage('启动隧道失败: ' + error.message, 'error');
-                })
-                .finally(() => {
-                    // 恢复按钮状态
-                    this.textContent = originalText;
-                    this.disabled = false;
-                });
-            });
+
             
-            // 加载ChmlFrp日志
-            function loadChmlfrpLog() {
-              fetch('/api/get_chmlfrp_log', {
-                method: 'GET',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Admin-Token': localStorage.getItem('admin_token')
-                }
-              })
-              .then(response => response.text())
-              .then(logContent => {
-                const logElement = document.getElementById('chmlfrp-log');
-                if (logElement) {
-                  logElement.textContent = logContent || '暂无日志内容';
-                  // 滚动到底部
-                  logElement.scrollTop = logElement.scrollHeight;
-                }
-              })
-              .catch(error => {
-                console.error('加载ChmlFrp日志失败:', error);
-                const logElement = document.getElementById('chmlfrp-log');
-                if (logElement) {
-                  logElement.textContent = '加载日志失败，请稍后重试';
-                }
-              });
-            }
+
             
-            // 开始日志自动刷新
-            function startLogRefresh() {
-              if (logRefreshInterval) {
-                clearInterval(logRefreshInterval);
-              }
-              // 每3秒刷新一次日志
-              logRefreshInterval = setInterval(loadChmlfrpLog, 3000);
-            }
-            
-            // 停止日志自动刷新
-            function stopLogRefresh() {
-              if (logRefreshInterval) {
-                clearInterval(logRefreshInterval);
-                logRefreshInterval = null;
-              }
-            }
-            
-            // 绑定日志相关按钮事件
-            document.getElementById('refresh-log')?.addEventListener('click', loadChmlfrpLog);
-            document.getElementById('clear-log')?.addEventListener('click', function() {
-              const logElement = document.getElementById('chmlfrp-log');
-              if (logElement) {
-                logElement.textContent = '日志已清空';
-              }
-              // 请求服务器清空日志
-              fetch('/api/clear_chmlfrp_log', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-Admin-Token': localStorage.getItem('admin_token')
-                }
-              }).catch(error => {
-                console.error('清空ChmlFrp日志失败:', error);
-              });
-            });
-            
-            // 停止隧道
-                    document.getElementById('stop-tunnel')?.addEventListener('click', function() {
-                        // 显示加载状态
-                        const originalText = this.textContent;
-                        this.textContent = '停止中...';
-                        this.disabled = true;
-                        
-                        fetch('/api/stop_chmlfrp_tunnel', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-Admin-Token': localStorage.getItem('admin_token')
-                            }
-                        })
-                        .then(response => {
-                            if (response.ok) {
-                                return response.json();
-                            } else {
-                                throw new Error('停止失败');
-                            }
-                        })
-                        .then(data => {
-                            if (data.success) {
-                                showMessage('隧道已停止', 'success');
-                                // 禁用停止按钮，启用启动按钮
-                                this.disabled = true;
-                                document.getElementById('start-tunnel').disabled = false;
-                                
-                                // 清除活跃隧道状态
-                                window.activeTunnel = null;
-                                
-                                // 启用所有隧道的选择
-                                const tunnelCards = document.querySelectorAll('.tunnel-card');
-                                tunnelCards.forEach(card => {
-                                    card.style.opacity = '1';
-                                    card.style.cursor = 'pointer';
-                                    card.style.borderColor = '#ddd';
-                                    card.style.boxShadow = 'none';
-                                });
-                                
-                                // 隐藏日志容器
-                                const logContainer = document.getElementById('chmlfrp-log-container');
-                                if (logContainer) {
-                                    logContainer.style.display = 'none';
-                                }
-                                // 停止日志自动刷新
-                                stopLogRefresh();
-                            } else {
-                                showMessage('隧道停止失败: ' + data.message, 'error');
-                            }
-                        })
-                .catch(error => {
-                    console.error('停止隧道错误:', error);
-                    showMessage('停止隧道失败: ' + error.message, 'error');
-                })
-                .finally(() => {
-                    // 恢复按钮状态
-                    this.textContent = originalText;
-                });
-            });
-            
-            // 原有的生成frpc.ini配置文件代码开始
-            document.getElementById('generate-frpc-config')?.addEventListener('click', function() {
-                const token = document.getElementById('chmlfrp_token').value;
-                
-                // 查找选中的隧道卡片
-                let selectedTunnel = null;
-                const tunnelCards = document.querySelectorAll('.tunnel-card');
-                for (let i = 0; i < tunnelCards.length; i++) {
-                    if (tunnelCards[i].style.borderColor === 'rgb(0, 123, 255)' || 
-                        tunnelCards[i].style.borderColor === '#007bff') {
-                        selectedTunnel = tunnelCards[i];
-                        break;
-                    }
-                }
-                
-                if (!selectedTunnel) {
-                    showMessage('请先选择一个隧道', 'error');
-                    return;
-                }
-                
-                const tunnelId = selectedTunnel.dataset.tunnelId;
-                const tunnelName = selectedTunnel.dataset.tunnelName;
-                
-                // 显示加载状态
-                const originalText = this.textContent;
-                this.textContent = '生成中...';
-                this.disabled = true;
-                
-                fetch('/api/get_chmlfrp_tunnel_config', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Admin-Token': localStorage.getItem('admin_token')
-                    },
-                    body: JSON.stringify({
-                        token: token,
-                        tunnel_id: tunnelId,
-                        tunnel_name: tunnelName
-                    })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        return response.json();
-                    } else {
-                        return response.text().then(text => {
-                            throw new Error(text);
-                        });
-                    }
-                })
-                .then(data => {
-                    if (data.success) {
-                        showMessage(data.message, 'success');
-                        setTimeout(() => {
-                            showModal('快捷启动指南', `
-                                <div style="text-align: left;">
-                                    <h4>如何使用快捷启动命令</h4>
-                                    <p><strong>Windows系统：</strong></p>
-                                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                                        <code>${data.commands.windows}</code>
-                                    </div>
-                                    <p><strong>Linux/MacOS系统：</strong></p>
-                                    <div style="background-color: #f8f9fa; padding: 10px; border-radius: 5px; margin: 10px 0;">
-                                        <code>${data.commands.linux_macos}</code>
-                                    </div>
-                                    <ol style="margin-top: 15px;">
-                                        <li>从ChmlFrp官网下载适合您系统的frpc客户端程序</li>
-                                        <li><strong>重要：</strong>将下载的frpc程序（Windows为frpc.exe，Linux/MacOS为frpc）放置到FileSharePlatform根目录下自动创建的<strong>chmlfrp</strong>文件夹中</li>
-                                        <li>根据您的操作系统，复制并执行对应的快捷启动命令</li>
-                                        <li>查看程序输出，确认隧道连接成功</li>
-                                    </ol>
-                                    <div style="margin-top: 15px; padding: 10px; background-color: #e3f2fd; border-radius: 5px;">
-                                        <p style="margin: 0;"><i class="bi bi-info-circle"></i> <strong>系统会自动创建chmlfrp目录</strong>，您只需将下载的frpc程序放入该目录即可。程序启动后，所有frpc相关日志将被记录到系统日志中。</p>
-                                    </div>
-                                    <p style="margin-top: 15px; color: #666;">
-                                        成功连接后，您可以通过远程地址访问本地服务。
-                                    </p>
-                                </div>
-                            `, 'html');
-                        }, 500);
-                    } else {
-                        showMessage('生成快捷启动命令失败: ' + data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('生成配置文件错误:', error);
-                    showMessage('生成配置文件失败：' + error.message, 'error');
-                })
-                .finally(() => {
-                    // 恢复按钮状态
-                    this.textContent = originalText;
-                    this.disabled = false;
-                });
-            });
+
             
             // 辅助函数：格式化流量显示
             function formatTraffic(bytes) {
@@ -2458,24 +2220,93 @@
     
     <style>
         /* 深色模式下的弹窗样式 */
-        body.dark-mode .modal-content-wrapper {
+        [data-theme="dark"] .modal-content-wrapper {
             background-color: var(--dark-card);
             color: var(--dark-text);
             border-color: var(--dark-border);
         }
         
-        body.dark-mode .modal-content-wrapper h2 {
+        [data-theme="dark"] .modal-content-wrapper h2 {
             color: var(--dark-text);
         }
         
-        body.dark-mode .confirm-content-wrapper {
+        [data-theme="dark"] .confirm-content-wrapper {
             background-color: var(--dark-card);
             color: var(--dark-text);
             border-color: var(--dark-border);
         }
         
-        body.dark-mode #confirm-no {
+        [data-theme="dark"] #confirm-no {
             background-color: var(--dark-border);
+        }
+    </style>
+            </div>
+        </main>
+    
+    <!-- 深色模式切换脚本 -->
+    <script>
+        // 深色模式切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                }
+            });
+        });
+    </script>
+    
+    <!-- 左下角深色模式切换控件样式 -->
+    <style>
+        .bottom-left-controls {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            z-index: 1000;
+        }
+        
+        .bottom-left-controls button {
+            padding: 8px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .bottom-left-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 深色模式下的按钮样式 */
+        [data-theme="dark"] .bottom-left-controls button {
+            background-color: var(--dark-card);
+            color: var(--dark-text);
+            border-color: var(--dark-border);
+        }
+        
+        [data-theme="dark"] .bottom-left-controls button:hover {
+            background-color: #334155;
         }
     </style>
 </body>

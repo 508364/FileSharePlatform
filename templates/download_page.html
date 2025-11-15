@@ -430,14 +430,14 @@
                                     <div class="flex-grow-1">
                                         <h5 class="card-title mb-1">${file.name}</h5>
                                         <div>
-                                            <a href="/file_detail?file=${ file.name }">查看详情</a>
+                                            <a href="/file_detail?file=${encodeURIComponent(file.name)}">查看详情</a>
                                         </div>
                                         <div class="file-info">
                                             <span>${formatBytes(file.size)}</span>
                                             <span>上传于: ${modifiedDate}</span>
                                         </div>
                                     </div>
-                                    <a href="/download/${file.filename}" class="btn btn-sm btn-outline-primary">
+                                    <a href="/download/${encodeURIComponent(file.filename)}" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-download me-1"></i> 下载
                                     </a>
                                 </div>
@@ -456,5 +456,82 @@
             setInterval(loadData, 1 * 60 * 1000);
         });
     </script>
+    
+    <!-- 左下角深色模式切换控件 -->
+    <div class="bottom-left-controls">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-moon"></i> 深色模式
+        </button>
+    </div>
+    
+    <!-- 深色模式切换脚本 -->
+    <script>
+        // 深色模式切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            // 检查本地存储或系统偏好
+            const savedTheme = localStorage.getItem('theme') || 
+                            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                document.body.style.backgroundColor = '#1a1a2e';
+                document.body.style.color = '#e0e0e0';
+            }
+            
+            // 切换主题
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                if (currentTheme === 'dark') {
+                    document.documentElement.removeAttribute('data-theme');
+                    localStorage.setItem('theme', 'light');
+                    themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
+                    document.body.style.backgroundColor = '#f5f7fb';
+                    document.body.style.color = '#333';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
+                    document.body.style.backgroundColor = '#1a1a2e';
+                    document.body.style.color = '#e0e0e0';
+                }
+            });
+        });
+    </script>
+    
+    <!-- 左下角深色模式切换控件样式 -->
+    <style>
+        .bottom-left-controls {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            z-index: 1000;
+        }
+        
+        .bottom-left-controls button {
+            padding: 8px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .bottom-left-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 深色模式下的按钮样式 */
+        [data-theme="dark"] .bottom-left-controls button {
+            background-color: #252b33;
+            color: #e0e0e0;
+            border-color: #495057;
+        }
+        
+        [data-theme="dark"] .bottom-left-controls button:hover {
+            background-color: #343a40;
+        }
+    </style>
 </body>
 </html>

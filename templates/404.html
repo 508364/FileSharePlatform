@@ -43,16 +43,23 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             min-height: 100vh;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
             transition: background-color 0.3s, color 0.3s;
         }
         
         .error-container {
+            -ms-flex: 1;
             flex: 1;
+            display: -ms-flexbox;
             display: flex;
+            -ms-flex-direction: column;
             flex-direction: column;
+            -ms-flex-pack: center;
             justify-content: center;
+            -ms-flex-align: center;
             align-items: center;
             padding: 40px 20px;
         }
@@ -83,19 +90,34 @@
             background: var(--header-bg) !important;
         }
         
-        .theme-switch-container {
+        .bottom-left-controls {
             position: fixed;
-            top: 15px;
-            right: 15px;
+            bottom: 15px;
+            left: 15px;
             z-index: 1000;
         }
         
-        #theme-toggle {
+        .bottom-left-controls button {
+            padding: 8px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .bottom-left-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* 深色模式下的按钮样式 */
+        [data-theme="dark"] .bottom-left-controls button {
             background-color: var(--card-bg);
             color: var(--text-color);
-            border: 1px solid var(--border-color);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+            border-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] .bottom-left-controls button:hover {
+            background-color: #252b33;
         }
         
         footer {
@@ -147,7 +169,6 @@
         // 深色模式切换功能
         document.addEventListener('DOMContentLoaded', function() {
             const themeToggle = document.getElementById('theme-toggle');
-            const themeIcon = themeToggle.querySelector('i');
             
             // 检查本地存储或系统偏好
             const savedTheme = localStorage.getItem('theme') || 
@@ -155,11 +176,9 @@
             
             if (savedTheme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                themeIcon.className = 'bi bi-sun';
                 themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                themeIcon.className = 'bi bi-moon';
                 themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
             }
             
@@ -169,18 +188,16 @@
                 if (currentTheme === 'dark') {
                     document.documentElement.removeAttribute('data-theme');
                     localStorage.setItem('theme', 'light');
-                    themeIcon.className = 'bi bi-moon';
                     themeToggle.innerHTML = '<i class="bi bi-moon"></i> 深色模式';
                 } else {
                     document.documentElement.setAttribute('data-theme', 'dark');
                     localStorage.setItem('theme', 'dark');
-                    themeIcon.className = 'bi bi-sun';
                     themeToggle.innerHTML = '<i class="bi bi-sun"></i> 浅色模式';
                 }
             });
         });
     </script>
-    <div class="theme-switch-container">
+    <div class="bottom-left-controls">
         <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-moon"></i> 深色模式
         </button>

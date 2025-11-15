@@ -6,7 +6,6 @@
 该程序实现了一个基于Flask的文件共享平台,提供文件上传、下载、管理功能,
 以及系统资源监控、GitHub仓库克隆等辅助功能。
 """
-
 # ==============================================
 # 标准库导入
 # ==============================================
@@ -50,11 +49,22 @@ from urllib.parse import urlparse
 from urllib3.util.retry import Retry
 from requests import Session
 from requests.adapters import HTTPAdapter
-from flask import Flask, render_template, send_from_directory, request, jsonify, abort, session, redirect, url_for, flash
+from flask import Flask, render_template, send_from_directory, request, jsonify, abort, session, redirect, url_for, flash, Response
+from flask_cors import CORS, cross_origin
 
 # ============================================== 
 # 自定义模块导入 
 # ==============================================
+
+# 导入更新模块
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+try:
+    from updater import check_for_updates, download_update, restart_server, get_current_version, log_update
+    UPDATER_AVAILABLE = True
+except ImportError as e:
+    print(f"更新模块导入失败: {e}")
+    UPDATER_AVAILABLE = False
 
 # 日志功能
 # 日志目录
@@ -130,28 +140,7 @@ def log_api(endpoint, method, status_code, ip=None):
         message += f" - IP: {ip}"
     api_logger.info(message)
 
-# frp日志记录器
-frp_logger = logging.getLogger('frp')
-frp_logger.setLevel(logging.INFO)
-frp_handler = logging.FileHandler(os.path.join(LOG_DIR, f'frp_{datetime.today().date().strftime('%Y%m%d')}.log'), encoding='utf-8')
-frp_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', '%Y-%m-%d %H:%M:%S')
-frp_handler.setFormatter(frp_formatter)
-frp_logger.addHandler(frp_handler)
 
-# 添加控制台输出
-if console_handler:
-    frp_logger.addHandler(console_handler)
-
-def log_frp(event, level='info'):
-    """记录frp相关日志"""
-    if level.lower() == 'debug':
-        frp_logger.debug(event)
-    elif level.lower() == 'warning':
-        frp_logger.warning(event)
-    elif level.lower() == 'error':
-        frp_logger.error(event)
-    else:
-        frp_logger.info(event)
 
 def log_user(username, action, details=None):
     """记录用户操作日志"""
@@ -220,6 +209,9 @@ if not hasattr(json, 'JSONDecodeError'):
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # 添加密钥用于session管理
 
+# 初始化CORS
+CORS(app, resources={"/*": {"origins": "*"}})
+
 # 自定义函数：获取用户真实IP地址
 def get_real_ip():
     """
@@ -260,7 +252,7 @@ DEFAULT_CONFIG = {
     'max_file_size': 100,              # 单个文件最大大小(MB)
     'max_total_size': 1024,            # 总存储空间大小(MB)
     'app_name': '文件共享平台',         # 应用名称
-    'app_version': '1.7',              # 应用版本
+    'app_version': '1.9',              # 应用版本
     'admin_user': 'admin',             # 管理员用户名
     'admin_password': 'admin@123',     # 管理员密码
     'port': 5000,                      # 服务端口
@@ -285,7 +277,7 @@ def check_for_updates(current_version):
         current_version (str): 当前应用版本
     
     Returns:
-        dict: 包含更新信息的字典,如果没有更新则返回None
+        dict: 包含更新信息的字典
     """
     try:
         # GitHub仓库信息
@@ -306,21 +298,42 @@ def check_for_updates(current_version):
         release_info = response.json()
         latest_version = release_info.get('tag_name', '').replace('FileSharePlatform-v', '')
         
-        # 版本比较
+        # 版本比较逻辑
         if latest_version and latest_version > current_version:
-            # 构建下载链接
+            # 当前版本低于GitHub版本，有版本更新
             download_url = f'https://github.com/{owner}/{repo}/releases/tag/FileSharePlatform-v{latest_version}'
             
             return {
+                'status': 'update_available',
                 'current_version': current_version,
                 'latest_version': latest_version,
                 'download_url': download_url,
-                'release_notes': release_info.get('body', '')
+                'release_notes': release_info.get('body', ''),
+                'message': '有版本更新'
             }
-        return None
+        elif latest_version and latest_version < current_version:
+            # 当前版本高于GitHub版本，当前是开发版本
+            return {
+                'status': 'development_version',
+                'current_version': current_version,
+                'latest_version': latest_version,
+                'message': '当前是开发版本'
+            }
+        else:
+            # 当前版本等于GitHub版本，已是最新版本
+            return {
+                'status': 'no_update',
+                'current_version': current_version,
+                'message': '当前已是最新版本'
+            }
+            
     except Exception as e:
         print(f"检查更新失败: {e}")
-        return None
+        return {
+            'status': 'check_failed',
+            'current_version': current_version,
+            'message': f'检查更新失败: {str(e)}'
+        }
 
 # 配置与元数据文件路径
 CONFIG_FILE = 'fileshare_config.json'   # 系统配置文件
@@ -546,7 +559,7 @@ def update_metadata(filename, action='upload'):
 
 def get_file_list():
     """
-    获取上传目录中的文件列表
+    获取上传目录中的文件列表，增强中文文件名支持并确保后缀名正确显示
     
     Returns:
         list: 包含文件信息的字典列表,每个字典包含文件名、大小、修改时间等信息
@@ -559,9 +572,25 @@ def get_file_list():
     metadata = load_metadata()
     files = []
     
-    for filename in os.listdir(upload_dir):  
+    # 确保os.listdir使用正确的编码处理中文文件名
+    try:
+        # Windows系统上确保文件名编码正确
+        import sys
+        if sys.platform.startswith('win'):
+            # Windows系统上os.listdir已经返回Unicode字符串
+            filenames = os.listdir(upload_dir)
+        else:
+            # 其他系统可能需要处理编码
+            filenames = [filename.decode('utf-8') if isinstance(filename, bytes) else filename 
+                        for filename in os.listdir(upload_dir)]
+    except Exception as e:
+        # 回退方案
+        filenames = os.listdir(upload_dir)
+        print(f"获取文件名列表时编码处理警告: {e}")
+    
+    for filename in filenames:
         # 安全检查，防止目录遍历攻击
-        if '../' in filename or not re.match(r'^[\w\-. ]+$', filename):
+        if '../' in filename:
             continue
         
         file_path = os.path.join(upload_dir, filename)
@@ -570,9 +599,14 @@ def get_file_list():
                 file_info = os.stat(file_path)
                 file_meta = metadata.get(filename, {})
                 
+                # 分离文件名和扩展名，确保后缀名正确显示
+                name_without_ext, ext = os.path.splitext(filename)
+                
                 files.append({
-                    'filename': filename,
-                    'name': filename,
+                    'filename': filename,       # 完整文件名，包含后缀
+                    'name': filename,           # 保持向后兼容
+                    'name_without_ext': name_without_ext,  # 不包含后缀的文件名
+                    'extension': ext.lstrip('.').lower() if ext else '',  # 提取后缀名(不含点号)
                     'size': file_info.st_size,
                     'filesize': file_info.st_size,
                     'modified': file_info.st_mtime,
@@ -973,7 +1007,10 @@ class UploadTask:
     def __init__(self, file, task_id):
         self.file = file
         self.task_id = task_id
-        self.filename = secure_filename(file.filename)
+        # 保留原始文件名以支持中文
+        self.filename = file.filename
+        # 仅过滤路径分隔符和特殊字符，保留中文
+        self.filename = self.filename.replace('/', '_').replace('\\', '_').replace('<', '').replace('>', '').replace(':', '').replace('"', '').replace('|', '').replace('?', '').replace('*', '')
         self.status = 'queued'
         self.progress = 0
         self.start_time = time.time()
@@ -1457,8 +1494,11 @@ def upload():
             })
         
         # 安全保存文件
-        filename = secure_filename(file.filename)
-        save_path = os.path.join(system_config['upload_folder'], filename)
+            # 保留原始文件名以支持中文
+            filename = file.filename
+            # 仅过滤路径分隔符和特殊字符，保留中文
+            filename = filename.replace('/', '_').replace('\\', '_').replace('<', '').replace('>', '').replace(':', '').replace('"', '').replace('|', '').replace('?', '').replace('*', '')
+            save_path = os.path.join(system_config['upload_folder'], filename)
         
         # 处理重名文件
         counter = 1
@@ -1573,7 +1613,10 @@ def upload_multi():
             }), 400
         
         # 安全保存文件
-        filename = secure_filename(file.filename)
+        # 保留原始文件名以支持中文
+        filename = file.filename
+        # 仅过滤路径分隔符和特殊字符，保留中文
+        filename = filename.replace('/', '_').replace('\\', '_').replace('<', '').replace('>', '').replace(':', '').replace('"', '').replace('|', '').replace('?', '').replace('*', '')
         save_path = os.path.join(system_config['upload_folder'], filename)
         
         # 处理重名文件
@@ -1718,8 +1761,8 @@ def api_sysinfo():
 def get_system_config():
     """获取系统配置API"""
     return jsonify({
-        'max_file_size': system_config['max_file_size'],
-        'max_total_size': system_config['max_total_size'],
+        'max_file_size': system_config['max_file_size'] * 1024 * 1024,  # 返回字节数
+        'max_total_size': system_config['max_total_size'] * 1024 * 1024,  # 返回字节数
         'app_name': system_config['app_name'],
         'app_version': system_config['app_version']
     })
@@ -1818,6 +1861,271 @@ def api_restart_server():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# ==============================================
+# 在线更新API
+# ==============================================
+
+@app.route('/api/check_update', methods=['GET'])
+@require_admin_token
+def api_check_update():
+    """检查更新API"""
+    try:
+        if not UPDATER_AVAILABLE:
+            return jsonify({"status": "error", "message": "更新模块不可用"}), 500
+        
+        # 获取当前版本号
+        current_version = get_current_version()
+        
+        # 检查是否是exe环境
+        if current_version == 'EXE_ENVIRONMENT':
+            log_update('INFO', '检测到exe环境，禁用更新检查')
+            return jsonify({
+                "status": "exe_environment", 
+                "message": "检测到可执行文件环境，禁用自动更新功能",
+                "current_version": current_version,
+                "latest_version": None
+            })
+        
+        log_update('INFO', f"检查更新，当前版本: {current_version}")
+        
+        # 检查GitHub上是否有新版本
+        update_info = check_for_updates(current_version)
+        
+        # 直接返回检查结果
+        return jsonify(update_info)
+            
+    except Exception as e:
+        log_update('ERROR', f"检查更新失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/start_update', methods=['POST'])
+@require_admin_token
+def api_start_update():
+    """一键更新API - 组合下载和应用更新"""
+    try:
+        if not UPDATER_AVAILABLE:
+            return jsonify({"status": "error", "message": "更新模块不可用"}), 500
+        
+        # 获取当前版本号并检查更新
+        current_version = get_current_version()
+        
+        # 检查是否是exe环境
+        if current_version == 'EXE_ENVIRONMENT':
+            log_update('INFO', '检测到exe环境，禁用一键更新')
+            return jsonify({
+                "status": "exe_environment", 
+                "message": "检测到可执行文件环境，禁用自动更新功能"
+            })
+        
+        log_update('INFO', f"开始一键更新，当前版本: {current_version}")
+        
+        # 检查GitHub上是否有新版本
+        update_info = check_for_updates(current_version)
+        
+        # 如果没有可用更新，直接返回
+        if not update_info or update_info.get('status') != 'update_available':
+            return jsonify({
+                "status": "no_update", 
+                "message": update_info.get('message', '当前已是最新版本')
+            })
+        
+        # 获取下载链接（优先使用代理）
+        download_url = update_info.get('proxy_download_url') or update_info.get('download_url')
+        latest_version = update_info.get('latest_version')
+        
+        if not download_url or not latest_version:
+            return jsonify({"status": "error", "message": "获取下载链接失败"}), 400
+        
+        # 下载更新文件
+        log_update('INFO', f"开始下载更新文件: {latest_version}")
+        
+        def progress_callback(progress):
+            log_update('INFO', f"更新进度: {progress:.1f}%")
+        
+        # 下载更新
+        update_file_path = download_update(download_url, latest_version, progress_callback)
+        
+        if not update_file_path:
+            log_update('ERROR', f"下载更新失败: {latest_version}")
+            return jsonify({"status": "error", "message": "下载更新失败"}), 500
+        
+        log_update('INFO', f"更新文件下载完成: {update_file_path}")
+        
+        # 应用更新
+        log_update('INFO', f"开始应用更新: {latest_version}")
+        
+        success = apply_update(update_file_path, latest_version, progress_callback)
+        
+        if success:
+            log_update('INFO', f"更新应用成功: {latest_version}")
+            return jsonify({
+                "status": "success", 
+                "message": f"更新成功，版本已更新到 {latest_version}",
+                "needs_restart": True,
+                "new_version": latest_version
+            })
+        else:
+            log_update('ERROR', f"应用更新失败: {latest_version}")
+            return jsonify({"status": "error", "message": "应用更新失败"}), 500
+            
+    except Exception as e:
+        log_update('ERROR', f"一键更新失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/download_update', methods=['POST'])
+@require_admin_token
+def api_download_update():
+    """下载更新API"""
+    try:
+        if not UPDATER_AVAILABLE:
+            return jsonify({"status": "error", "message": "更新模块不可用"}), 500
+        
+        # 检查是否是exe环境
+        current_version = get_current_version()
+        if current_version == 'EXE_ENVIRONMENT':
+            log_update('INFO', '检测到exe环境，禁用更新下载')
+            return jsonify({
+                "status": "exe_environment", 
+                "message": "检测到可执行文件环境，禁用自动更新功能"
+            })
+        
+        data = request.get_json()
+        # 支持使用代理下载链接
+        download_url = data.get('proxy_download_url') or data.get('download_url')
+        version = data.get('latest_version') or data.get('version')
+        
+        if not download_url or not version:
+            return jsonify({"status": "error", "message": "缺少必要参数"}), 400
+        
+        # 下载更新文件
+        log_update('INFO', f"开始下载更新文件: {version}")
+        
+        def progress_callback(progress):
+            # 这里是下载进度回调，可以记录到日志或返回给前端
+            log_update('INFO', f"下载进度: {progress:.1f}%")
+        
+        update_file_path = download_update(download_url, version, progress_callback)
+        
+        if update_file_path:
+            # 保存下载信息
+            update_info = {
+                'version': version,
+                'download_url': download_url,
+                'file_path': update_file_path,
+                'status': 'downloaded',
+                'downloaded_at': datetime.now().isoformat()
+            }
+            
+            log_update('INFO', f"更新文件下载完成: {update_file_path}")
+            return jsonify({"status": "success", "update_info": update_info})
+        else:
+            log_update('ERROR', f"下载更新失败: {version}")
+            return jsonify({"status": "error", "message": "下载更新失败"}), 500
+            
+    except Exception as e:
+        log_update('ERROR', f"下载更新失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/apply_update', methods=['POST'])
+@require_admin_token
+def api_apply_update():
+    """应用更新API"""
+    try:
+        if not UPDATER_AVAILABLE:
+            return jsonify({"status": "error", "message": "更新模块不可用"}), 500
+        
+        # 检查是否是exe环境
+        current_version = get_current_version()
+        if current_version == 'EXE_ENVIRONMENT':
+            log_update('INFO', '检测到exe环境，禁用更新应用')
+            return jsonify({
+                "status": "exe_environment", 
+                "message": "检测到可执行文件环境，禁用自动更新功能"
+            })
+        
+        data = request.get_json()
+        version = data.get('version')
+        file_path = data.get('file_path')
+        
+        if not version or not file_path:
+            return jsonify({"status": "error", "message": "缺少必要参数"}), 400
+        
+        # 应用更新
+        log_update('INFO', f"开始应用更新: {version}")
+        
+        def progress_callback(progress):
+            log_update('INFO', f"应用更新进度: {progress:.1f}%")
+        
+        success = apply_update(file_path, version, progress_callback)
+        
+        if success:
+            log_update('INFO', f"更新应用成功: {version}")
+            return jsonify({
+                "status": "success", 
+                "message": f"更新应用成功，版本已更新到 {version}",
+                "needs_restart": True
+            })
+        else:
+            log_update('ERROR', f"应用更新失败: {version}")
+            return jsonify({"status": "error", "message": "应用更新失败"}), 500
+            
+    except Exception as e:
+        log_update('ERROR', f"应用更新失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/restart_after_update', methods=['POST'])
+@require_admin_token
+def api_restart_after_update():
+    """重启服务器API（更新后）"""
+    try:
+        if not UPDATER_AVAILABLE:
+            return jsonify({"status": "error", "message": "更新模块不可用"}), 500
+        
+        log_update('INFO', "开始重启服务器")
+        
+        # 使用updater模块重启服务器
+        success = restart_server()
+        
+        if success:
+            log_update('INFO', "服务器重启请求已发送")
+            return jsonify({"status": "success", "message": "服务器正在重启中，请稍等..."})
+        else:
+            log_update('ERROR', "服务器重启失败")
+            return jsonify({"status": "error", "message": "服务器重启失败"}), 500
+            
+    except Exception as e:
+        log_update('ERROR', f"重启服务器失败: {str(e)}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route('/api/update_status', methods=['GET'])
+@require_admin_token
+def api_update_status():
+    """获取更新状态API"""
+    try:
+        if not UPDATER_AVAILABLE:
+            return jsonify({"status": "error", "message": "更新模块不可用"}), 500
+        
+        current_version = get_current_version()
+        
+        # 检查是否有更新信息文件
+        from updater.update_utils import load_update_info
+        update_info = load_update_info()
+        
+        return jsonify({
+            "status": "success",
+            "current_version": current_version,
+            "update_info": update_info
+        })
+        
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route('/api/system_log', methods=['GET'])
 @require_admin_token
 def api_system_log():
@@ -1828,7 +2136,7 @@ def api_system_log():
         days = int(request.args.get('days', 1))
         
         # 验证日志类型
-        valid_types = ['system', 'api', 'user', 'frp']
+        valid_types = ['system', 'api', 'user']
         if log_type not in valid_types:
             log_type = 'system'
         
@@ -1858,430 +2166,6 @@ def api_system_log():
 
 
 # ==============================================
-# ChmlFrp内网穿透API
-# ==============================================
-
-@app.route('/api/update_chmlfrp_config', methods=['POST'])
-@require_admin_token
-def api_update_chmlfrp_config():
-    """更新ChmlFrp配置API"""
-    try:
-        data = request.get_json()
-        
-        # 保存ChmlFrp配置
-        if 'chmlfrp_token' in data:
-            system_config['chmlfrp_token'] = data['chmlfrp_token']
-        
-        save_config()
-        return jsonify({"status": "success", "message": "ChmlFrp配置已保存"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 400
-
-
-@app.route('/api/check_chmlfrp_status', methods=['GET', 'POST'])
-@require_admin_token
-def api_check_chmlfrp_status():
-    """检查ChmlFrp状态API，支持GET和POST请求"""
-    try:
-        # 从请求中获取token参数（支持GET和POST）
-        token = None
-        
-        if request.method == 'POST':
-            data = request.get_json()
-            token = data.get('token') or system_config.get('chmlfrp_token', '')
-        else:
-            token = system_config.get('chmlfrp_token')
-        
-        if not token:
-            return jsonify({"success": False, "message": "请先配置ChmlFrp Token"}), 400
-        
-        # 检查API状态
-        api_status_url = "http://cf-v2.uapis.cn/api/server-status"
-        response = requests.get(api_status_url, timeout=5)
-        api_status = response.json()
-        
-        # 获取用户信息
-        user_info_url = f"http://cf-v2.uapis.cn/userinfo?token={token}"
-        user_response = requests.get(user_info_url, timeout=5)
-        user_info = user_response.json()
-        
-        # 获取隧道列表
-        tunnel_list_url = f"http://cf-v2.uapis.cn/tunnel?token={token}"
-        tunnel_response = requests.get(tunnel_list_url, timeout=5)
-        tunnel_list = tunnel_response.json()
-        
-        # 转换隧道列表格式，使其更容易在前端处理
-        tunnels = []
-        # 检查tunnel_list是否是包含data字段的对象
-        if isinstance(tunnel_list, dict) and 'data' in tunnel_list and isinstance(tunnel_list['data'], list):
-            tunnel_data = tunnel_list['data']
-            for tunnel in tunnel_data:
-                # 提取隧道的基本信息
-                tunnel_info = {
-                    'id': tunnel.get('id', ''),
-                    'name': tunnel.get('name', ''),
-                    'type': tunnel.get('type', 'tcp'),
-                    'local_ip': tunnel.get('localip', '127.0.0.1'),  # 注意字段名是localip而不是local_ip
-                    'local_port': tunnel.get('dorp', '5000'),  # 注意字段名是dorp而不是local_port
-                    'remote_port': tunnel.get('nport', ''),  # 注意字段名是nport而不是remote_port
-                    'ip': tunnel_list.get('ip', tunnel.get('ip', 'ct-chmlfrp.220715.xyz')),  # 优先使用tunnel_list中的IP，然后是tunnel中的IP
-                    'nport': tunnel.get('nport', ''),  # 添加nport字段以兼容前端代码
-                    'node': tunnel.get('node', '')  # 添加node字段以显示节点名称
-                }
-                tunnels.append(tunnel_info)
-        # 兼容旧的列表格式
-        elif isinstance(tunnel_list, list):
-            for tunnel in tunnel_list:
-                # 提取隧道的基本信息
-                tunnel_info = {
-                    'id': tunnel.get('id', ''),
-                    'name': tunnel.get('name', ''),
-                    'type': tunnel.get('type', 'tcp'),
-                    'local_ip': tunnel.get('local_ip', '127.0.0.1'),
-                    'local_port': tunnel.get('local_port', '5000'),
-                    'remote_port': tunnel.get('remote_port', ''),
-                    'node': tunnel.get('node', '')  # 添加node字段以显示节点名称
-                }
-                tunnels.append(tunnel_info)
-        
-        return jsonify({
-            "success": True,
-            "data": {
-                "api_status": api_status,
-                "user_info": user_info,
-                "tunnel_list": tunnel_list
-            },
-            "tunnels": tunnels,  # 新增简化的隧道列表格式，便于前端展示
-            "server": {
-                "ip": api_status.get('server', {}).get('ip', 'cf-v2.uapis.cn'),
-                "port": api_status.get('server', {}).get('port', 7000),
-                "tls": api_status.get('server', {}).get('tls', False)
-            }
-        })
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
-
-
-@app.route('/api/get_chmlfrp_tunnel_config', methods=['POST'])
-@require_admin_token
-def api_get_chmlfrp_tunnel_config():
-    """获取ChmlFrp隧道配置并生成符合要求格式的frpc.ini文件"""
-    try:
-        # 从请求体中获取参数
-        data = request.get_json()
-        token = data.get('token') or system_config.get('chmlfrp_token', '')
-        tunnel_id = data.get('tunnel_id')  # 新增的隧道ID参数
-        tunnel_name = data.get('tunnel_name') or system_config.get('chmlfrp_tunnel_name', 'fileshare')
-        
-        if not token:
-            return "请先设置ChmlFrp Token", 400
-        
-        # 获取API状态信息，这将用于获取服务器地址和端口
-        api_status_url = "http://cf-v2.uapis.cn/api/server-status"
-        api_status_response = requests.get(api_status_url, timeout=5)
-        api_status = api_status_response.json()
-        
-        # 获取隧道列表，用于获取特定隧道的信息
-        tunnel_list_url = f"http://cf-v2.uapis.cn/tunnel?token={token}"
-        tunnel_response = requests.get(tunnel_list_url, timeout=5)
-        tunnel_list = tunnel_response.json()
-        
-        # 处理隧道列表数据（兼容不同格式）
-        tunnel_data = []
-        if isinstance(tunnel_list, dict) and 'data' in tunnel_list and isinstance(tunnel_list['data'], list):
-            tunnel_data = tunnel_list['data']
-        elif isinstance(tunnel_list, list):
-            tunnel_data = tunnel_list
-        
-        # 提取服务器配置信息
-        # 优先使用tunnel_list中的ip字段，然后再使用api_status中的值
-        server_addr = tunnel_list.get('ip', api_status.get('server', {}).get('ip', 'ct-chmlfrp.220715.xyz'))
-        server_port = api_status.get('server', {}).get('port', 7000)
-        tls_enable = api_status.get('server', {}).get('tls', False)
-        
-        # 生成快捷启动命令信息
-        commands_info = {
-            'windows': f'frpc.exe -u {token} -p {tunnel_id}',
-            'linux_macos': f'chmod +x frpc && ./frpc -u {token} -p {tunnel_id}'
-        }
-        
-        # 返回成功信息和命令
-        return jsonify({
-            'success': True,
-            'message': '快捷启动命令已生成',
-            'commands': commands_info
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-    except Exception as e:
-        return str(e), 500
-
-# 全局变量用于存储frpc进程
-frpc_process = None
-
-# 确保chmlfrp目录存在
-def ensure_chmlfrp_dir():
-    """确保chmlfrp目录存在，如果不存在则创建"""
-    chmlfrp_dir = os.path.join(app.root_path, 'chmlfrp')
-    if not os.path.exists(chmlfrp_dir):
-        try:
-            os.makedirs(chmlfrp_dir)
-            log_system(f'创建chmlfrp目录: {chmlfrp_dir}', 'info')
-        except Exception as e:
-            log_system(f'创建chmlfrp目录失败: {str(e)}', 'error')
-    return chmlfrp_dir
-
-@app.route('/api/start_chmlfrp_tunnel', methods=['POST'])
-@require_admin_token
-def api_start_chmlfrp_tunnel():
-    """启动ChmlFrp隧道API"""
-    global frpc_process
-    
-    try:
-        data = request.get_json()
-        tunnel_id = data.get('tunnel_id', '')
-        tunnel_name = data.get('tunnel_name', '')
-        token = data.get('token') or system_config.get('chmlfrp_token', '')
-        
-        if not token:
-            return jsonify({
-                'success': False,
-                'message': '请先设置ChmlFrp Token'
-            }), 400
-        
-        # 检查是否已经有运行中的frpc进程
-        if frpc_process and frpc_process.poll() is None:
-            return jsonify({
-                'success': True,
-                'message': '隧道已经在运行中'
-            })
-        
-        # 确保chmlfrp目录存在
-        chmlfrp_dir = ensure_chmlfrp_dir()
-        
-        # 记录日志
-        log_system(f'启动隧道: {tunnel_name} (ID: {tunnel_id})', 'info')
-        log_frp(f'准备使用快捷启动命令启动隧道 {tunnel_name} (ID: {tunnel_id})', 'info')
-        
-        # 根据操作系统选择启动命令
-        import subprocess
-        import sys
-        
-        if sys.platform == 'win32':
-            # Windows系统
-            frpc_path = os.path.join(chmlfrp_dir, 'frpc.exe')
-            # 检查frpc.exe是否存在
-            if not os.path.exists(frpc_path):
-                return jsonify({
-                    'success': False,
-                    'message': 'frpc.exe不存在，请先下载客户端程序并放置到chmlfrp目录'
-                }), 400
-            
-            # 使用快捷启动命令格式
-            frpc_process = subprocess.Popen(
-                [frpc_path, '-u', token, '-p', tunnel_id],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=chmlfrp_dir,
-                shell=False
-            )
-        else:
-            # Linux/MacOS系统
-            frpc_path = os.path.join(chmlfrp_dir, 'frpc')
-            # 检查frpc是否存在
-            if not os.path.exists(frpc_path):
-                return jsonify({
-                    'success': False,
-                    'message': 'frpc程序不存在，请先下载客户端程序并放置到chmlfrp目录'
-                }), 400
-            
-            # 给予执行权限
-            import stat
-            os.chmod(frpc_path, os.stat(frpc_path).st_mode | stat.S_IEXEC)
-            
-            # 使用快捷启动命令格式
-            frpc_process = subprocess.Popen(
-                [frpc_path, '-u', token, '-p', tunnel_id],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=chmlfrp_dir,
-                shell=False
-            )
-        
-        # 添加进程日志监控，使用专门的frp日志系统
-        # 获取用户真实IP地址
-        user_ip = get_real_ip()
-        
-        def log_frpc_output(process):
-            log_frp(f'frpc进程已启动，开始监控输出', 'info')
-            
-            # 确保chmlfrp目录存在
-            chmlfrp_dir = ensure_chmlfrp_dir()
-            
-            # 定义日志文件路径
-            log_file_path = os.path.join(chmlfrp_dir, 'chmlfrp.txt')
-            
-            # 写入启动信息到文件
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-            with open(log_file_path, 'a', encoding='utf-8') as f:
-                f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] frpc进程已启动，开始监控输出\n')
-            
-            # 监控标准输出
-            while True:
-                line = process.stdout.readline()
-                if line:
-                    log_content = line.decode('utf-8', errors='replace').strip()
-                    log_frp(log_content, 'info')
-                    
-                    # 写入到chmlfrp.txt文件
-                    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                    with open(log_file_path, 'a', encoding='utf-8') as f:
-                        f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] {log_content}\n')
-                else:
-                    break
-            
-            # 记录错误输出
-            error = process.stderr.read()
-            if error:
-                error_content = error.decode('utf-8', errors='replace').strip()
-                log_frp(error_content, 'error')
-                
-                # 写入错误到chmlfrp.txt文件
-                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                with open(log_file_path, 'a', encoding='utf-8') as f:
-                    f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] [ERROR] {error_content}\n')
-            
-            # 记录进程结束信息
-            exit_code = process.poll()
-            log_frp(f'frpc进程已结束，退出码: {exit_code}', 'info')
-            
-            # 写入结束信息到chmlfrp.txt文件
-            timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-            with open(log_file_path, 'a', encoding='utf-8') as f:
-                f.write(f'[{timestamp}] [{tunnel_id}] [IP: {user_ip}] frpc进程已结束，退出码: {exit_code}\n')
-                f.write('----------------------------------------\n')
-        
-        # 启动日志监控线程
-        import threading
-        log_thread = threading.Thread(target=log_frpc_output, args=(frpc_process,))
-        log_thread.daemon = True
-        log_thread.start()
-        
-        return jsonify({
-            'success': True,
-            'message': f'隧道 {tunnel_name} 启动成功'
-        })
-        
-    except Exception as e:
-        log_system(f'启动隧道失败: {str(e)}', 'error')
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-@app.route('/api/stop_chmlfrp_tunnel', methods=['POST'])
-@require_admin_token
-def api_stop_chmlfrp_tunnel():
-    """停止ChmlFrp隧道API"""
-    global frpc_process
-    
-    try:
-        # 检查是否有运行中的frpc进程
-        if frpc_process and frpc_process.poll() is None:
-            # 记录日志
-            log_system('停止隧道', 'info')
-            
-            # 杀死进程
-            if sys.platform == 'win32':
-                # Windows系统
-                subprocess.call(['taskkill', '/F', '/T', '/PID', str(frpc_process.pid)])
-            else:
-                # Linux/MacOS系统
-                frpc_process.terminate()
-                try:
-                    # 等待进程结束，最多等待5秒
-                    frpc_process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    # 如果超时，强制杀死进程
-                    frpc_process.kill()
-            
-            # 重置全局变量
-            frpc_process = None
-            
-            return jsonify({
-                'success': True,
-                'message': '隧道已成功停止'
-            })
-        else:
-            # 没有运行中的进程
-            frpc_process = None  # 重置全局变量
-            return jsonify({
-                'success': True,
-                'message': '隧道未在运行'
-            })
-            
-    except Exception as e:
-        log_system(f'停止隧道失败: {str(e)}', 'error')
-        return jsonify({
-            'success': False,
-            'message': str(e)
-        }), 500
-
-
-@app.route('/api/get_chmlfrp_log', methods=['GET'])
-@require_admin_token
-def api_get_chmlfrp_log():
-    """获取ChmlFrp日志API"""
-    try:
-        chmlfrp_dir = os.path.join(app.root_path, 'chmlfrp')
-        log_file_path = os.path.join(chmlfrp_dir, 'chmlfrp.txt')
-        
-        # 检查日志文件是否存在
-        if not os.path.exists(log_file_path):
-            # 如果文件不存在，创建一个空文件
-            with open(log_file_path, 'w', encoding='utf-8') as f:
-                f.write('')
-            return jsonify({"success": True, "log": [], "message": "日志文件已创建"})
-        
-        # 读取日志文件内容
-        with open(log_file_path, 'r', encoding='utf-8') as f:
-            log_lines = f.readlines()
-            
-        # 返回日志内容，按行拆分
-        return jsonify({"success": True, "log": log_lines})
-    except Exception as e:
-        log_system(f'读取ChmlFrp日志失败: {str(e)}', 'error')
-        return jsonify({"success": False, "message": str(e)}), 500
-
-
-@app.route('/api/clear_chmlfrp_log', methods=['POST'])
-@require_admin_token
-def api_clear_chmlfrp_log():
-    """清空ChmlFrp日志API"""
-    try:
-        chmlfrp_dir = os.path.join(app.root_path, 'chmlfrp')
-        log_file_path = os.path.join(chmlfrp_dir, 'chmlfrp.txt')
-        
-        # 确保chmlfrp目录存在
-        if not os.path.exists(chmlfrp_dir):
-            os.makedirs(chmlfrp_dir)
-        
-        # 清空日志文件
-        with open(log_file_path, 'w', encoding='utf-8') as f:
-            f.write('')
-        
-        log_system('ChmlFrp日志已清空', 'info')
-        return jsonify({"success": True, "message": "日志已清空"})
-    except Exception as e:
-        log_system(f'清空ChmlFrp日志失败: {str(e)}', 'error')
-        return jsonify({"success": False, "message": str(e)}), 500
-
-
-# ==============================================
 # 页面路由
 # ==============================================
 @app.route('/index')
@@ -2302,10 +2186,10 @@ def index():
     )
 
 
-@app.route('/download/<filename>')
+@app.route('/download/<path:filename>')
 def download(filename):
     """文件下载路由"""
-    if '../' in filename or not re.match(r'^[\w\-. ]+$', filename):
+    if '../' in filename:
         abort(400)
     
     upload_dir = system_config['upload_folder']
@@ -2315,13 +2199,14 @@ def download(filename):
         abort(404)
     
     update_metadata(filename, 'download')
-    return send_from_directory(upload_dir, filename, as_attachment=True)
+    # 使用attachment_filename参数确保中文文件名在下载时正确显示
+    return send_from_directory(upload_dir, filename, as_attachment=True, attachment_filename=filename)
 
 
-@app.route('/preview/<filename>')
+@app.route('/preview/<path:filename>')
 def preview(filename):
-    """文件预览路由"""
-    if '../' in filename or not re.match(r'^[\w\-. ]+$', filename):
+    """文件预览路由，支持硬件加速视频解码，添加Range Requests支持，增强中文文件支持和更多文件类型"""
+    if '../' in filename:
         abort(400)
     
     upload_dir = system_config['upload_folder']
@@ -2330,7 +2215,138 @@ def preview(filename):
     if not os.path.isfile(file_path):
         abort(404)
     
-    return send_from_directory(upload_dir, filename)
+    # 针对不同的视频和音频格式设置正确的MIME类型
+    ext = os.path.splitext(filename)[1].lower()
+    mimetype = None
+    
+    # 视频格式MIME类型 - 扩展支持更多格式并优化中文文件名处理
+    video_extensions = {
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.ogg': 'video/ogg',
+        '.avi': 'video/x-msvideo',
+        '.mov': 'video/quicktime',
+        '.wmv': 'video/x-ms-wmv',
+        '.flv': 'video/x-flv',
+        '.mkv': 'video/x-matroska',
+        '.m4v': 'video/x-m4v',
+        '.3gp': 'video/3gpp',
+        '.3g2': 'video/3gpp2',
+        '.mpg': 'video/mpeg',
+        '.mpeg': 'video/mpeg',
+        '.ts': 'video/mp2t',
+        '.m2ts': 'video/mp2t'
+    }
+    
+    if ext in video_extensions:
+        mimetype = video_extensions[ext]
+    # 音频格式MIME类型
+    elif ext in ['.mp3']:
+        mimetype = 'audio/mpeg'
+    elif ext in ['.wav']:
+        mimetype = 'audio/wav'
+    elif ext in ['.ogg']:
+        mimetype = 'audio/ogg'
+    elif ext in ['.aac']:
+        mimetype = 'audio/aac'
+    # 图片格式MIME类型
+    elif ext in ['.jpg', '.jpeg']:
+        mimetype = 'image/jpeg'
+    elif ext in ['.png']:
+        mimetype = 'image/png'
+    elif ext in ['.gif']:
+        mimetype = 'image/gif'
+    elif ext in ['.webp']:
+        mimetype = 'image/webp'
+    # PDF格式
+    elif ext in ['.pdf']:
+        mimetype = 'application/pdf'
+    # 文本格式
+    elif ext in ['.txt']:
+        mimetype = 'text/plain; charset=utf-8'
+    # 压缩文件格式 - 添加.zip支持
+    elif ext in ['.zip']:
+        mimetype = 'application/zip'
+    elif ext in ['.rar']:
+        mimetype = 'application/x-rar-compressed'
+    elif ext in ['.7z']:
+        mimetype = 'application/x-7z-compressed'
+    # 可执行文件格式 - 添加.exe支持
+    elif ext in ['.exe']:
+        mimetype = 'application/x-msdownload'
+    # Office文档格式
+    elif ext in ['.docx']:
+        mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    elif ext in ['.xlsx']:
+        mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    elif ext in ['.pptx']:
+        mimetype = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    elif ext in ['.doc']:
+        mimetype = 'application/msword'
+    elif ext in ['.xls']:
+        mimetype = 'application/vnd.ms-excel'
+    elif ext in ['.ppt']:
+        mimetype = 'application/vnd.ms-powerpoint'
+    
+    # 获取文件大小
+    file_size = os.path.getsize(file_path)
+    
+    # 对于视频和音频文件，实现Range Requests支持，确保所有视频格式和中文文件名都能正常处理
+    supported_media_exts = list(video_extensions.keys()) + ['.mp3', '.wav', '.aac']
+    if ext in supported_media_exts:
+        # 获取Range请求头
+        range_header = request.headers.get('Range', None)
+        
+        if range_header:
+            # 解析Range头
+            range_match = re.search(r'bytes=(\d+)-(\d*)', range_header)
+            if range_match:
+                start = int(range_match.group(1))
+                end = range_match.group(2)
+                end = int(end) if end else file_size - 1
+                
+                # 计算要发送的内容长度
+                length = end - start + 1
+                
+                # 打开文件并设置读取位置
+                try:
+                    with open(file_path, 'rb') as f:
+                        f.seek(start)
+                        data = f.read(length)
+                    
+                    # 创建响应，添加Content-Disposition确保中文文件名正确显示
+                    response = Response(data, 206, mimetype=mimetype, direct_passthrough=True)
+                    response.headers.add('Content-Range', f'bytes {start}-{end}/{file_size}')
+                    response.headers.add('Accept-Ranges', 'bytes')
+                    response.headers.add('Content-Length', length)
+                    response.headers.add('Cache-Control', 'public, max-age=3600')
+                    # 添加Content-Disposition头部支持中文文件名，修复编码格式
+                    response.headers.add('Content-Disposition', f'inline; filename="{filename}"; filename*=UTF-8''{filename}')
+                    return response
+                except Exception as e:
+                    app.logger.error(f"Error streaming video file: {e}")
+                    abort(500)
+        
+        # 如果没有Range头或处理失败，返回完整文件但添加必要的头信息
+        response = send_from_directory(upload_dir, filename, mimetype=mimetype)
+        response.headers.add('Accept-Ranges', 'bytes')
+        response.headers.add('Content-Length', file_size)
+        response.headers.add('Cache-Control', 'public, max-age=3600')
+        # 添加Content-Disposition头部支持中文文件名，修复编码格式
+        response.headers.add('Content-Disposition', f'inline; filename="{filename}"; filename*=UTF-8''{filename}')
+        return response
+    
+    # 对于非视频音频文件，确保中文文件名支持和正确的MIME类型处理
+    response = send_from_directory(upload_dir, filename, mimetype=mimetype)
+    response.headers.add('Cache-Control', 'public, max-age=3600')
+    # 为所有文件类型添加Content-Disposition头部，确保中文文件名正确显示
+    if ext in ['.zip', '.exe', '.rar', '.7z']:
+        # 对于可下载的文件类型，使用attachment
+        response.headers.add('Content-Disposition', f'attachment; filename="{filename}"; filename*=UTF-8''{filename}')
+    else:
+        # 对于其他文件类型，尝试内联显示
+        response.headers.add('Content-Disposition', f'inline; filename="{filename}"; filename*=UTF-8''{filename}')
+        return response
 
 
 @app.route('/captcha_settings')
@@ -2870,13 +2886,18 @@ if __name__ == '__main__':
     
     # 检查更新
     current_version = system_config['app_version']
-    update_info = check_for_updates(current_version)
-    if update_info:
-        print(f"\n\033[92m发现新版本!\033[0m 当前版本: {update_info['current_version']}, 最新版本: {update_info['latest_version']}")
-        print(f"下载链接: {update_info['download_url']}")
-        print("请访问链接下载并更新到最新版本。\n")
+    
+    # 检查是否是exe环境
+    if current_version != 'EXE_ENVIRONMENT':
+        update_info = check_for_updates(current_version)
+        if update_info and update_info.get('status') == 'update_available':
+            print(f"\n\033[92m发现新版本!\033[0m 当前版本: {update_info['current_version']}, 最新版本: {update_info['latest_version']}")
+            print(f"下载链接: {update_info['download_url']}")
+            print("请访问链接下载并更新到最新版本。\n")
+        else:
+            print("\n当前已是最新版本。\n")
     else:
-        print("\n当前已是最新版本。\n")
+        print("\n检测到可执行文件环境，自动更新功能已禁用。\n")
 
     print("\033[91m启动后,请到管理员页面配置密码,以生成配置文件")
     print("请管理员尽快到配置文件中配置极验,以便使用离线下载功能\033[0m")

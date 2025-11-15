@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统更新 - FileSharePlatform</title>
+    <style>
+        :root {
+            --bg-color: #0f1419;
+            --card-bg: #1a1f29;
+            --text-color: #e6edf3;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --accent-color: #58a6ff;
+            --success-color: #3fb950;
+            --warning-color: #d29922;
+            --error-color: #f85149;
+            --progress-bg: #21262d;
+            --progress-fill: #58a6ff;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --card-bg: #f6f8fa;
+            --text-color: #24292f;
+            --text-secondary: #656d76;
+            --border-color: #d0d7de;
+            --accent-color: #0969da;
+            --success-color: #1a7f37;
+            --warning-color: #9a6700;
+            --error-color: #cf222e;
+            --progress-bg: #eaeef2;
+            --progress-fill: #0969da;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .update-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .update-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, var(--accent-color), var(--success-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+
+        .update-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .update-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+
+        .update-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .update-status {
+            background: var(--progress-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--progress-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--progress-fill), var(--success-color));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .info-box {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .info-title {
+            font-weight: 600;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+        }
+
+        .info-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .button-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4493f8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--progress-bg);
+            color: var(--text-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--progress-bg);
+            border-top: 2px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .update-container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            .update-title {
+                font-size: 24px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="update-container">
+        <div class="update-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+        </div>
+        
+        <h1 class="update-title">系统更新中</h1>
+        <p class="update-description">FileSharePlatform 正在更新中，请稍候...</p>
+        
+        <div class="update-status" id="updateStatus">
+            <div class="status-text" id="statusText">准备更新...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-title">更新说明</div>
+            <div class="info-text">
+                • 系统将在更新期间暂停服务<br>
+                • 管理员可以访问管理后台查看进度<br>
+                • 更新完成后将自动重启服务<br>
+                • 预计更新时间：2-5分钟
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="window.location.href='/admin'">管理后台</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/admin_login'">管理员登录</button>
+        </div>
+        
+        <div class="error-message hidden" id="errorMessage"></div>
+    </div>
+
+    <script>
+        let updateStatus = {
+            stage: 'preparing',
+            progress: 0,
+            message: '准备更新...'
+        };
+
+        function updateUI() {
+            const statusText = document.getElementById('statusText');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const updateStatus = document.getElementById('updateStatus');
+
+            statusText.textContent = updateStatus.message;
+            progressFill.style.width = updateStatus.progress + '%';
+            progressText.textContent = updateStatus.progress + '%';
+
+            // 根据状态更新样式
+            updateStatus.className = `update-status ${getStatusClass(updateStatus.stage)}`;
+        }
+
+        function getStatusClass(stage) {
+            switch(stage) {
+                case 'preparing':
+                case 'downloading':
+                    return '';
+                case 'applying':
+                    return 'active';
+                case 'completed':
+                    return 'success';
+                case 'error':
+                    return 'error';
+                default:
+                    return '';
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+
+        function hideError() {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.classList.add('hidden');
+        }
+
+        // 模拟更新进度（实际应用中应该通过WebSocket或轮询获取真实进度）
+        function simulateUpdate() {
+            const stages = [
+                { stage: 'preparing', progress: 10, message: '检查更新信息...' },
+                { stage: 'preparing', progress: 25, message: '下载更新文件...' },
+                { stage: 'downloading', progress: 50, message: '下载更新文件中...' },
+                { stage: 'applying', progress: 75, message: '应用更新...' },
+                { stage: 'applying', progress: 90, message: '更新配置...' },
+                { stage: 'completed', progress: 100, message: '更新完成，正在重启...' }
+            ];
+
+            let currentStage = 0;
+            
+            const interval = setInterval(() => {
+                if (currentStage < stages.length) {
+                    updateStatus = { ...stages[currentStage] };
+                    updateUI();
+                    currentStage++;
+                } else {
+                    clearInterval(interval);
+                    // 更新完成后，延迟几秒刷新页面
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                }
+            }, 2000);
+        }
+
+        // 检查更新状态
+        async function checkUpdateStatus() {
+            try {
+                hideError();
+                
+                const response = await fetch('/api/update_status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    if (data.update_info && data.update_info.status) {
+                        updateStatus = {
+                            stage: data.update_info.status,
+                            progress: data.update_info.progress || 0,
+                            message: data.update_info.message || '更新进行中...'
+                        };
+                        updateUI();
+                    } else {
+                        // 没有更新信息，显示完成状态
+                        updateStatus = {
+                            stage: 'completed',
+                            progress: 100,
+                            message: '系统运行正常'
+                        };
+                        updateUI();
+                    }
+                } else {
+                    // 如果返回错误，可能表示更新已完成或没有进行中的更新
+                    updateStatus = {
+                        stage: 'completed',
+                        progress: 100,
+                        message: '系统运行正常'
+                    };
+                    updateUI();
+                }
+            } catch (error) {
+                console.error('检查更新状态失败:', error);
+                // 如果API调用失败，显示系统正常运行
+                updateStatus = {
+                    stage: 'completed',
+                    progress: 100,
+                    message: '系统运行正常'
+                };
+                updateUI();
+            }
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 先检查真实状态，如果没有更新则显示正常运行状态
+            checkUpdateStatus();
+            
+            // 如果有更新正在进行，则显示模拟进度
+            setTimeout(() => {
+                if (updateStatus.stage !== 'completed') {
+                    simulateUpdate();
+                }
+            }, 2000);
+        });
+
+        // 每30秒检查一次更新状态
+        setInterval(checkUpdateStatus, 30000);
+    </script>
+</body>
+</html>
